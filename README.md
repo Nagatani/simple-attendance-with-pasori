@@ -1,6 +1,12 @@
 # simple-attendance-with-pasori
 簡易出席登録
 
+## require
+
+- Sony PaSoRi RC-S380
+- Python(pipenv)
+- Google Chrome
+
 ## usage
 
 ```
