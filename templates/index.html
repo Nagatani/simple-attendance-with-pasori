@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>出席登録 {{ section_title }} - 第{{ section_id }}回</title>
+    
+    <!-- UIkit CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.15.8/dist/css/uikit.min.css" />
+    <!-- UIkit JS -->
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.15.8/dist/js/uikit.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.15.8/dist/js/uikit-icons.min.js"></script>
+
+    <script src="{{ url_for('static', filename='felica.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='append.js') }}" defer></script>
+  </head>
+  <body>
+    <div class="uk-navbar-container uk-margin">
+      <div class="uk-container uk-container-expand">
+        <div class="uk-navbar">
+          <div class="uk-navbar-left">
+            <span class="uk-navbar-item uk-logo">{{ section_title }} - 第{{ section_id }}回 出席登録</span>
+          </div>
+          <div class="uk-navbar-right">
+            <button id="start" class="uk-button uk-button-large uk-button-default uk-width-1-1 uk-text-capitalize">FeliCaリーダーに接続</button>
+            <div id="waiting" class="uk-margin" style="display: none;">
+              <button class="uk-button uk-button-large uk-button-default uk-width-1-1" disabled>
+                FeliCaリーダーにカードをかざしてください
+                <span uk-spinner="" class="uk-spinner uk-icon">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 30 30" ratio="1">
+                    <circle fill="none" stroke="#000" cx="15" cy="15" r="14"></circle>
+                  </svg>
+                </span>
+              </button>
+            </div>
+            <div id="idm" class="uk-alert uk-alert-success uk-text-center" uk-alert style="display: none;"></div>
+        </div>
+        </div>
+      </div>
+    </div>
+    <div class="uk-container uk-container-expand">
+      <h1 id="hedding1" class="uk-heading-xlarge uk-text-center"></h1>
+      <hr class="uk-divider-icon">
+      <ul id="attendedList" class="uk-grid-small uk-child-width-auto uk-child-width-auto@s" uk-sortable="handle: .uk-card" uk-grid>
+      </ul>
+    </div>
+    <dialog id="favDialog">
+      <form class="uk-form-stacked" id="register-form">
+        <div class="uk-margin" id="dialogMessage">
+          学籍番号を入力してEnterKeyを押下してください。
+        </div>
+        <div class="uk-margin">
+          <label class="uk-form-label" for="input_idm">Card ID:</label>
+          <div class="uk-form-controls">
+            <input class="uk-input" id="input_idm" type="text" readonly>
+          </div>
+        </div>
+        <div class="uk-margin">
+          <label class="uk-form-label" for="input_student_id">Student ID"</label>
+          <div class="uk-form-controls">
+            <input class="uk-input" id="input_student_id" type="text" placeholder="学籍番号を入力する">
+          </div>
+        </div>
+      </form>
+    </dialog>
+  </body>
+</html>
