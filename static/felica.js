@@ -122,8 +122,7 @@ async function session(device) {
       idmStr += idm[i].toString(16);
     }
     idmMessage.innerText = "Card Type: Felica  カードのIDm: " + idmStr;
-    changeIdm(idmStr);
-
+    updateIDm(idmStr); // ここでIDを送信する( customize: ADD Code )
     idmMessage.style.display = 'block';
     waitingMessage.style.display = 'none';
     return;
@@ -191,8 +190,7 @@ async function session(device) {
       idtStr += idt[i].toString(16);
     }
     idmMessage.innerText = "Card Type : MIFARE  カードのID: " + idtStr;
-    changeIdm(idtStr);
-
+    updateIDm(idtStr); // ここでIDを送信する( customize: ADD Code )
     idmMessage.style.display = 'block';
     waitingMessage.style.display = 'none';
     return;
@@ -252,7 +250,7 @@ let beforeIdm = ''
  * IDMの変更を検知し、出席登録処理を呼び出す
  * @param {Felica IDM} idm 
  */
- const changeIdm = (idm) => {
+ const updateIDm = (idm) => {
   let favDialog = document.getElementById('favDialog')
   if (favDialog.open) return
   

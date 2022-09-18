@@ -1,6 +1,8 @@
 from flask import Flask, render_template, jsonify, request, g
 import sqlite3
 
+import config
+
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("section_title", help="講義タイトルを入力してください。", type=str)
@@ -13,7 +15,7 @@ app = Flask(__name__)
 def get_db():
   db = getattr(g, '_database', None)
   if db is None:
-      db = g._database = sqlite3.connect('attend.db')
+      db = g._database = sqlite3.connect(config.database_name)
   return db
 
 
@@ -35,7 +37,7 @@ def base():
 def get_students():
   with app.app_context():
     cur = get_db().cursor()
-    cur.execute("select card_id, student_id from students where student_id <> ''")
+    cur.execute("select card_id, student_id from students where student_id <> ''") # 一応、学籍番号が空のものは除外
     students = cur.fetchall()
     print(students)
     return jsonify(students)
@@ -131,12 +133,18 @@ def register_student():
     )
 
 if __name__ == '__main__':
+
+  # init database
   with app.app_context():
     con = get_db()
     cur = con.cursor()
 
-    # cur.execute("drop table if exists students")
-    # cur.execute("drop table if exists attendance")
+    # データベースのテーブルをドロップさせる場合はConfigファイルから設定可能
+    if config.init_tables:
+      cur.execute("drop table if exists students")
+      cur.execute("drop table if exists attendance")
+    
+    # 生徒とカードIDを管理するテーブルの作成
     cur.execute('''create table if not exists students ( 
       id integer primary key autoincrement, 
       card_id nverchar(32) not null, 
@@ -145,6 +153,8 @@ if __name__ == '__main__':
       create_datetime TIMESTAMP DEFAULT (datetime(CURRENT_TIMESTAMP,'localtime')), 
       update_datetime TIMESTAMP DEFAULT (datetime(CURRENT_TIMESTAMP,'localtime'))
     )''')
+
+    # 出席を管理するテーブルの作成
     cur.execute('''create table if not exists attendance (
       id integer primary key autoincrement, 
       section_id nverchar(32) not null, 
@@ -154,9 +164,13 @@ if __name__ == '__main__':
       update_datetime TIMESTAMP DEFAULT (datetime(CURRENT_TIMESTAMP,'localtime'))
     )''')
 
+    # UNIQUEインデックスの作成（データ件数が少なければなくても良いかも）
     cur.execute('''create unique index if not exists studentindex on students(card_id)''')
     cur.execute('''create unique index if not exists attendanceindex on attendance(section_id, card_id)''')
     
     con.commit()
 
-  app.run(port=8000, host='0.0.0.0', debug=True)
+  # Flaskの起動
+  app.run(port=config.run_port,
+          host=config.run_host,
+          debug=True)

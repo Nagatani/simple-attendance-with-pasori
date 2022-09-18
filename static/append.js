@@ -54,10 +54,11 @@ const register = (card_id, student_id) => {
           //favDialog.showModal()
           inputStudntId.focus()
         } else {
+          // 正常登録が終わったはずなので、dialogを閉じて学籍番号の入力欄をクリアして出席表示
           favDialog.close()
           inputStudntId.value = ""
 
-          // todo: 出席表示
+          // 出席表示
           addAttend(data.student_id)
         }
 
@@ -70,12 +71,17 @@ const register = (card_id, student_id) => {
 }
 
 
+/**
+ * ダイアログ上で学籍番号を入力(バーコードリーダーでスキャン)した際に発火させるキーイベント
+ */
 inputStudntId.addEventListener('keypress', (ev) => {
   if (ev.key === 'Enter' && inputStudntId.value !== "") {
-    console.log("Enterが押されました。");
+    // console.log("Enterが押されました。");
+    // keypressイベントの消去
     ev.preventDefault();
     ev.stopPropagation();
     ev.stopImmediatePropagation();
+
     console.log(inputIdm.value, inputStudntId.value);
     register(inputIdm.value, inputStudntId.value);
   }  
@@ -84,27 +90,43 @@ inputStudntId.addEventListener('keypress', (ev) => {
 
 let attends = []
 let students = []
+
+/**
+ * 出席情報を取得して表示する（エラーにより再起動した際の対策）
+ */
 const showAllAttendance = () => {
   attends = []
   students = []
   fetch('/get-attended').then(response => {
     return response.json().then(data => {
-      
-      attends = data
-      console.log(attends)
+      if (response.ok) {
+        console.log(data)
+        attends = data
 
-      while (attendedList.firstChild) {
-        attendedList.removeChild(attendedList.firstChild);
-      }
-      attends.forEach(element => {
-        if (element.length >= 2) {
-          addAttend(element[1])
+        while (attendedList.firstChild) {
+          attendedList.removeChild(attendedList.firstChild);
         }
-      });
+        attends.forEach(element => {
+          if (element.length >= 2) {
+            addAttend(element[1])
+          }
+        });
+        hedding1.textContent = `学生証を読み込ませてください`
+
+        return data;
+      } else {
+        return Promise.reject(data);
+      }
     })
   })
 }
 
+
+/**
+ * 出席表示
+ * 
+ * @param {student_id} student_id 
+ */
 const addAttend = (student_id) => {
 
   if (students.includes(student_id)) {
@@ -127,7 +149,6 @@ const addAttend = (student_id) => {
   let li = document.createElement("li")
   li.appendChild(div)
 
-  //attendedList.appendChild(li)
   attendedList.insertBefore(li, attendedList.firstChild)
 
   hedding1.textContent = `出席: ${student_id}`
