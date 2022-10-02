@@ -132,6 +132,51 @@ def register_student():
       "message": message}
     )
 
+
+@app.route("/forgot_card", methods=["POST"])
+def register_forgot():
+  with app.app_context():
+    con = get_db()
+    cur = con.cursor()
+
+    student_id = request.form.get("student_id", None)
+    print(student_id)
+
+    if student_id == None:
+      return jsonify({
+        "status": "error",
+        "card_id": "",
+        "message": "student_id is empty."
+      })
+
+    cur.execute("select card_id from students where student_id = ?", (student_id, ))
+    student = cur.fetchone()
+    if student == None:
+      card_id = student_id # カード忘れの場合、カードIDは学籍番号と同じとする
+    else:
+      card_id = student[0]
+
+      cur.execute("select student_id from attendance where section_id = ? and card_id = ?", (args.section_id, card_id, ))
+      attend = cur.fetchone()
+      if attend == None:
+        cur.execute("insert into attendance (section_id, card_id, student_id, forgot_card) values (?, ?, ?, 'FORGOT')", (args.section_id, card_id, student_id, ))
+        con.commit()
+      else:
+        return jsonify({
+          "status": "error",
+          "card_id": card_id,
+          "message": "{}は出席登録済みです。".format(student_id)
+        })
+
+    message = "出席登録完了しました: {}".format(student_id)
+
+    return jsonify({
+      "status": "ok",
+      "student_id": student_id,
+      "message": message}
+    )
+
+
 if __name__ == '__main__':
 
   # init database
@@ -160,6 +205,7 @@ if __name__ == '__main__':
       section_id nverchar(32) not null, 
       card_id nverchar(32) not null, 
       student_id nverchar(32), 
+      forgot_card nverchar(32), 
       create_datetime TIMESTAMP DEFAULT (datetime(CURRENT_TIMESTAMP,'localtime')), 
       update_datetime TIMESTAMP DEFAULT (datetime(CURRENT_TIMESTAMP,'localtime'))
     )''')

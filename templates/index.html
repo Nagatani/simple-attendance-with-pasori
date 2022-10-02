@@ -45,8 +45,15 @@
       <ul id="attendedList" class="uk-grid-small uk-child-width-auto uk-child-width-auto@s" uk-sortable="handle: .uk-card" uk-grid>
       </ul>
     </div>
+    <div class="uk-position-bottom">
+      <a href="#" id="forgotCard">カード忘れ登録</a>
+    </div>
+
     <dialog id="favDialog">
-      <form class="uk-form-stacked" id="register-form">
+      <div class="uk-position-top-left">
+        <a href="#" onclick="document.getElementById('favDialog').close(); return false;"><span uk-icon="close"></span></a>
+      </div>
+      <form class="uk-margin uk-form-stacked" id="register-form">
         <div class="uk-margin" id="dialogMessage">
           学籍番号を入力してEnterKeyを押下してください。
         </div>
@@ -57,9 +64,25 @@
           </div>
         </div>
         <div class="uk-margin">
-          <label class="uk-form-label" for="input_student_id">Student ID"</label>
+          <label class="uk-form-label" for="input_student_id">Student ID:</label>
           <div class="uk-form-controls">
             <input class="uk-input" id="input_student_id" type="text" placeholder="学籍番号を入力する">
+          </div>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="forgotCardDialog">
+      <div class="uk-position-top-left">
+        <a href="#" onclick="document.getElementById('forgotCardDialog').close(); return false;"><span uk-icon="close"></span></a>
+      </div>
+      <form class="uk-margin uk-form-stacked" id="register-form">
+        <div class="uk-margin" id="forgotCardDialogMessage">
+          学籍番号を入力してEnterKeyを押下してください。
+        </div>
+        <div class="uk-margin">
+          <label class="uk-form-label" for="input_forgot_student_id">Student ID:</label>
+          <div class="uk-form-controls">
+            <input class="uk-input" id="input_forgot_student_id" type="text" placeholder="学籍番号を入力する">
           </div>
         </div>
       </form>

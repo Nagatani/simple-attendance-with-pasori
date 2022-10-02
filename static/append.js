@@ -1,10 +1,10 @@
 // 機能追加
 
-let inputIdm = document.getElementById("input_idm");
-let inputStudntId = document.getElementById("input_student_id");
-let favDialog = document.getElementById('favDialog');
-let attendedList = document.getElementById("attendedList");
-let hedding1 = document.getElementById("hedding1");
+let inputIdm = document.getElementById("input_idm")
+let inputStudntId = document.getElementById("input_student_id")
+let favDialog = document.getElementById('favDialog')
+let attendedList = document.getElementById("attendedList")
+let hedding1 = document.getElementById("hedding1")
 
 /**
  * 出席登録
@@ -78,9 +78,9 @@ inputStudntId.addEventListener('keypress', (ev) => {
   if (ev.key === 'Enter' && inputStudntId.value !== "") {
     // console.log("Enterが押されました。");
     // keypressイベントの消去
-    ev.preventDefault();
-    ev.stopPropagation();
-    ev.stopImmediatePropagation();
+    ev.preventDefault()
+    ev.stopPropagation()
+    ev.stopImmediatePropagation()
 
     console.log(inputIdm.value, inputStudntId.value);
     register(inputIdm.value, inputStudntId.value);
@@ -111,7 +111,7 @@ const showAllAttendance = () => {
             addAttend(element[1])
           }
         });
-        hedding1.textContent = `学生証を読み込ませてください`
+        hedding1.textContent = ``
 
         return data;
       } else {
@@ -155,6 +155,68 @@ const addAttend = (student_id) => {
   students.push(student_id)
 }
 
+let forgotCardLink = document.getElementById("forgotCard")
+let forgotCardDialog = document.getElementById("forgotCardDialog")
+let forgotCardDialogMessage = document.getElementById("forgotCardDialogMessage")
+
+forgotCardLink.addEventListener('click', (ev) => {
+  forgotCardDialog.showModal()
+
+  ev.preventDefault()
+  ev.stopPropagation()
+  ev.stopImmediatePropagation()
+})
+
+let inputForgotStudntId = document.getElementById("input_forgot_student_id")
+
+/**
+ * ダイアログ上で学籍番号を入力(バーコードリーダーでスキャン)した際に発火させるキーイベント
+ */
+ inputForgotStudntId.addEventListener('keypress', (ev) => {
+  if (ev.key === 'Enter' && inputForgotStudntId.value !== "") {
+    // keypressイベントの消去
+    ev.preventDefault()
+    ev.stopPropagation()
+    ev.stopImmediatePropagation()
+
+    console.log(inputForgotStudntId.value);
+    register_forgot(inputForgotStudntId.value);
+  }  
+})
+
+
+/**
+ * カード忘れ情報をサーバー側に送信する
+ */
+ const register_forgot = (student_id) => {
+
+  let formData = new FormData()
+  formData.append('student_id', student_id)
+  
+  fetch('/forgot_card', {method: "POST", body: formData}).then(response => {
+    return response.json().then(data => {
+      if (response.ok) {
+        console.log(data);
+        if (data.status === "error") {
+          //favDialog.showModal()
+          forgotCardDialogMessage.textContent = data.message
+          inputForgotStudntId.focus()
+        } else {
+          // 正常登録が終わったはずなので、dialogを閉じて学籍番号の入力欄をクリアして出席表示
+          forgotCardDialog.close()
+          inputForgotStudntId.value = ""
+
+          // 出席表示
+          addAttend(data.student_id)
+        }
+
+        return data;
+      } else {
+        return Promise.reject(data);
+      }
+    })
+  })
+}
 
 // 初回実行
 showAllAttendance()
