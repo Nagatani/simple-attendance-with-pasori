@@ -15,4 +15,4 @@ python_version = "3.8"
 
 [scripts]
 start = "python main.py"
-export = "python output_excel.py attend.xlsx"
+export = "python output_excel.py"
