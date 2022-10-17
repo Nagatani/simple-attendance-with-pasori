@@ -129,6 +129,11 @@ const showAllAttendance = () => {
  */
 const addAttend = (student_id) => {
 
+  const sound = document.getElementById('attend_sound')
+  sound.currentTime = 0
+  sound.muted = false
+  sound.play()
+
   if (students.includes(student_id)) {
     hedding1.textContent = `出席済: ${student_id}`
     return
