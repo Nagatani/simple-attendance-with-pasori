@@ -5,6 +5,10 @@ WebUSBでFelica使うコードは、以下のリポジトリを参考にして�
 
 - [marioninc/webusb-felica](https://github.com/marioninc/webusb-felica)
 
+出席登録時の効果音は以下のサイトからいただきました。
+
+- 効果音ラボ様 : [https://soundeffect-lab.info/sound/button/](https://soundeffect-lab.info/sound/button/)
+
 
 ## require
 
