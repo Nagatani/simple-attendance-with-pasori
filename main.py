@@ -152,21 +152,21 @@ def register_forgot():
     cur.execute("select card_id from students where student_id = ?", (student_id, ))
     student = cur.fetchone()
     if student == None:
-      card_id = student_id # カード忘れの場合、カードIDは学籍番号と同じとする
+      card_id = student_id # カード忘れの場合、かつ未登録学生の場合はカードIDは学籍番号と同じとする
     else:
       card_id = student[0]
 
-      cur.execute("select student_id from attendance where section_id = ? and card_id = ?", (args.section_id, card_id, ))
-      attend = cur.fetchone()
-      if attend == None:
-        cur.execute("insert into attendance (section_id, card_id, student_id, forgot_card) values (?, ?, ?, 'FORGOT')", (args.section_id, card_id, student_id, ))
-        con.commit()
-      else:
-        return jsonify({
-          "status": "error",
-          "card_id": card_id,
-          "message": "{}は出席登録済みです。".format(student_id)
-        })
+    cur.execute("select student_id from attendance where section_id = ? and card_id = ?", (args.section_id, card_id, ))
+    attend = cur.fetchone()
+    if attend == None:
+      cur.execute("insert into attendance (section_id, card_id, student_id, forgot_card) values (?, ?, ?, 'FORGOT')", (args.section_id, card_id, student_id, ))
+      con.commit()
+    else:
+      return jsonify({
+        "status": "error",
+        "card_id": card_id,
+        "message": "{}は出席登録済みです。".format(student_id)
+      })
 
     message = "出席登録完了しました: {}".format(student_id)
 
