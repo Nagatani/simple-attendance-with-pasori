@@ -25,7 +25,7 @@ let hedding1 = document.getElementById("hedding1")
           inputStudntId.focus();
         } else {
           // 出席表示
-          addAttend(data.student_id)
+          addAttend(data.student_id, true)
         }
         return data;
       } else {
@@ -59,7 +59,7 @@ const register = (card_id, student_id) => {
           inputStudntId.value = ""
 
           // 出席表示
-          addAttend(data.student_id)
+          addAttend(data.student_id, true)
         }
 
         return data;
@@ -108,7 +108,7 @@ const showAllAttendance = () => {
         }
         attends.forEach(element => {
           if (element.length >= 2) {
-            addAttend(element[1])
+            addAttend(element[1], false)
           }
         });
         hedding1.textContent = ``
@@ -127,15 +127,18 @@ const showAllAttendance = () => {
  * 
  * @param {student_id} student_id 
  */
-const addAttend = (student_id) => {
+const addAttend = (student_id, playsound) => {
 
-  const sound = document.getElementById('attend_sound')
-  sound.currentTime = 0
-  sound.muted = false
-  sound.play()
+  if (playsound) {
+    const sound = document.getElementById('attend_sound')
+    sound.currentTime = 0
+    sound.muted = false
+    sound.play()
+  }
 
   if (students.includes(student_id)) {
     hedding1.textContent = `出席済: ${student_id}`
+    inputIdm.value = ''
     return
   }
 
@@ -158,6 +161,7 @@ const addAttend = (student_id) => {
 
   hedding1.textContent = `出席: ${student_id}`
   students.push(student_id)
+  inputIdm.value = ""
 }
 
 let forgotCardLink = document.getElementById("forgotCard")
@@ -212,7 +216,7 @@ let inputForgotStudntId = document.getElementById("input_forgot_student_id")
           inputForgotStudntId.value = ""
 
           // 出席表示
-          addAttend(data.student_id)
+          addAttend(data.student_id, false)
         }
 
         return data;

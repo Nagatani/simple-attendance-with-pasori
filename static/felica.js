@@ -251,10 +251,16 @@ let beforeIdm = ''
  * @param {Felica IDM} idm 
  */
  const updateIDm = (idm) => {
+
+  const sound = document.getElementById('read_sound')
+  sound.currentTime = 0
+  sound.muted = false
+  sound.play()
+
   let favDialog = document.getElementById('favDialog')
   if (favDialog.open) return
   
-  if (idm.length === 8 && idm !== beforeIdm) { // 文字長さのチェックをここで入れているが、動作状況を見て必要なら外す
+  if (inputIdm && idm.length === 8 && idm !== beforeIdm) { // 文字長さのチェックをここで入れているが、動作状況を見て必要なら外す
     inputIdm.value = idm;
     beforeIdm = inputIdm.value;
     // inputIdm.value = "";
