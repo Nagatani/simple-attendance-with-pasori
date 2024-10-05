@@ -12,7 +12,7 @@ WebUSBでFelica使うコードは、以下のリポジトリを参考にして�
 
 ## require
 
-- Sony PaSoRi RC-S380
+- Sony PaSoRi RC-S380 or RC-S300
 - Python 3 (with pipenv)
 - Google Chrome
 
