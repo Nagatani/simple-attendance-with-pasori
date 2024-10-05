@@ -1,49 +1,92 @@
 // https://github.com/marioninc/webusb-felica
 
-let startButton = document.getElementById('start');
-let idmMessage = document.getElementById('idm');
-let waitingMessage = document.getElementById('waiting');
+const deviceFilters = [
+  { vendorId: 0x054c, productId: 0x06C1, deviceModel: 380 },
+  { vendorId: 0x054c, productId: 0x06C3, deviceModel: 380 },
+  { vendorId: 0x054c, productId: 0x0dc8, deviceModel: 300 },
+  { vendorId: 0x054c, productId: 0x0dc9, deviceModel: 300 },
+]
 
-async function sleep(msec) {
-  return new Promise(resolve => setTimeout(resolve, msec));
+const deviceModelList = {
+  0x06C1: 380,
+  0x06C3: 380,
+  0x0dc8: 300,
+  0x0dc9: 300,
 }
 
-async function send(device, data) {
-  let uint8a = new Uint8Array(data);
-  // console.log(">>>>>>>>>>");
-  // console.log(uint8a);
-  await device.transferOut(2, uint8a);
-  await sleep(10);
+let deviceModel
+
+let deviceEp = {
+  in: 0,
+  out: 0,
 }
 
-async function receive(device, len) {
+let seqNumber = 0
+
+const startButton = document.getElementById('start')
+const idmMessage = document.getElementById('idm')
+const waitingMessage = document.getElementById('waiting')
+
+const padding_zero = (num, p) => ("0".repeat(p * 1) + num).slice(-(p * 1))
+const dec2HexString = (n) => padding_zero((n * 1).toString(16), 2)
+
+const sleep = (msec) => new Promise((resolve) => setTimeout(resolve, msec))
+
+let send = async (device, data) => {
+  let uint8a = new Uint8Array(data)
+  // console.log(">>>>>>>>>>")
+  // console.log(uint8a)
+  await device.transferOut(deviceEp.out, uint8a)
+  await sleep(50)
+}
+
+const receive = async (device, len) => {
   // console.log("<<<<<<<<<<" + len);
-  let data = await device.transferIn(1, len);
-  // console.log(data);
-  await sleep(10);
-  let arr = [];
-  for (let i = data.data.byteOffset; i < data.data.byteLength; i++) {
-    arr.push(data.data.getUint8(i));
-  }
-  // console.log(arr);
-  return arr;
+  const data = await device.transferIn(deviceEp.in, len)
+  await sleep(10)
+
+  const arr = Array.from(new Uint8Array(data.data.buffer))
+  const arr_str = arr.map((v) => dec2HexString(v))
+  console.log(arr_str)
+  return arr
 }
 
-async function session(device) {
+const send300 = async (device, data) => {
+  let argData = new Uint8Array(data)
+  const dataLen = argData.length
+  const SLOTNUMBER = 0x00
+  let uint8a = new Uint8Array(10 + dataLen)
+
+  uint8a[0] = 0x6b                // ヘッダー作成
+  uint8a[1] = 255 & dataLen       // length をリトルエンディアン
+  uint8a[2] = dataLen >> 8 & 255
+  uint8a[3] = dataLen >> 16 & 255
+  uint8a[4] = dataLen >> 24 & 255
+  uint8a[5] = SLOTNUMBER          // タイムスロット番号
+  uint8a[6] = ++seqNumber         // 認識番号
+
+  0 != dataLen && uint8a.set(argData, 10) // コマンド追加
+  // console.log(">>>>>>>>>>")
+  // console.log(Array.from(uint8a).map(v => v.toString(16)))
+  await device.transferOut(deviceEp.out, uint8a)
+  await sleep(50)
+}
+
+let session = async (device) => {
   // INFO:nfc.clf:searching for reader on path usb:054c:06c3
   // DEBUG:nfc.clf.transport:using libusb-1.0.21
   // DEBUG:nfc.clf.transport:path matches '^usb(:[0-9a-fA-F]{4})(:[0-9a-fA-F]{4})?$'
   // DEBUG:nfc.clf.device:loading rcs380 driver for usb:054c:06c3
   // Level 9:nfc.clf.transport:>>> 0000ff00ff00
-  await send(device, [0x00, 0x00, 0xff, 0x00, 0xff, 0x00]);
+  await send(device, [0x00, 0x00, 0xff, 0x00, 0xff, 0x00])
 
   // Level 9:nfc.clf.rcs380:SetCommandType 01
   // Level 9:nfc.clf.transport:>>> 0000ffffff0300fdd62a01ff00
-  await send(device, [0x00, 0x00, 0xff, 0xff, 0xff, 0x03, 0x00, 0xfd, 0xd6, 0x2a, 0x01, 0xff, 0x00]);
+  await send(device, [0x00, 0x00, 0xff, 0xff, 0xff, 0x03, 0x00, 0xfd, 0xd6, 0x2a, 0x01, 0xff, 0x00])
   // Level 9:nfc.clf.transport:<<< 0000ff00ff00
-  await receive(device, 6);
+  await receive(device, 6)
   // Level 9:nfc.clf.transport:<<< 0000ffffff0300fdd72b00fe00
-  await receive(device, 13);
+  await receive(device, 13)
 
   // Level 9:nfc.clf.rcs380:GetFirmwareVersion
   // Level 9:nfc.clf.transport:>>> 0000ffffff0200fed6200a00
@@ -58,11 +101,11 @@ async function session(device) {
 
   // Level 9:nfc.clf.rcs380:SwitchRF 00
   // Level 9:nfc.clf.transport:>>> 0000ffffff0300fdd606002400
-  await send(device, [0x00, 0x00, 0xff, 0xff, 0xff, 0x03, 0x00, 0xfd, 0xd6, 0x06, 0x00, 0x24, 0x00]);
+  await send(device, [0x00, 0x00, 0xff, 0xff, 0xff, 0x03, 0x00, 0xfd, 0xd6, 0x06, 0x00, 0x24, 0x00])
   // Level 9:nfc.clf.transport:<<< 0000ff00ff00
-  await receive(device, 6);
+  await receive(device, 6)
   // Level 9:nfc.clf.transport:<<< 0000ffffff0300fdd707002200
-  await receive(device, 13);
+  await receive(device, 13)
 
   // Level 9:nfc.clf.rcs380:GetFirmwareVersion
   // Level 9:nfc.clf.transport:>>> 0000ffffff0200fed6200a00
@@ -73,59 +116,53 @@ async function session(device) {
 
   // Level 9:nfc.clf.rcs380:SwitchRF 00
   // Level 9:nfc.clf.transport:>>> 0000ffffff0300fdd606002400
-  await send(device, [0x00, 0x00, 0xff, 0xff, 0xff, 0x03, 0x00, 0xfd, 0xd6, 0x06, 0x00, 0x24, 0x00]);
+  await send(device, [0x00, 0x00, 0xff, 0xff, 0xff, 0x03, 0x00, 0xfd, 0xd6, 0x06, 0x00, 0x24, 0x00])
   // Level 9:nfc.clf.transport:<<< 0000ff00ff00
-  await receive(device, 6);
+  await receive(device, 6)
   // Level 9:nfc.clf.transport:<<< 0000ffffff0300fdd707002200
-  await receive(device, 13);
+  await receive(device, 13)
   // DEBUG:nfc.clf:sense 212F
   // DEBUG:nfc.clf.rcs380:polling for NFC-F technology
 
   // Level 9:nfc.clf.rcs380:InSetRF 01010f01
   // Level 9:nfc.clf.transport:>>> 0000ffffff0600fad60001010f011800
-  await send(device, [0x00, 0x00, 0xff, 0xff, 0xff, 0x06, 0x00, 0xfa, 0xd6, 0x00, 0x01, 0x01, 0x0f, 0x01, 0x18, 0x00]);
+  await send(device, [0x00, 0x00, 0xff, 0xff, 0xff, 0x06, 0x00, 0xfa, 0xd6, 0x00, 0x01, 0x01, 0x0f, 0x01, 0x18, 0x00])
   // Level 9:nfc.clf.transport:<<< 0000ff00ff00
-  await receive(device, 6);
+  await receive(device, 6)
   // Level 9:nfc.clf.transport:<<< 0000ffffff0300fdd701002800
-  await receive(device, 13);
+  await receive(device, 13)
 
   // Level 9:nfc.clf.rcs380:InSetProtocol 00180101020103000400050006000708080009000a000b000c000e040f001000110012001306
   // Level 9:nfc.clf.transport:>>> 0000ffffff2800d8d60200180101020103000400050006000708080009000a000b000c000e040f0010001100120013064b00
-  await send(device, [0x00, 0x00, 0xff, 0xff, 0xff, 0x28, 0x00, 0xd8, 0xd6, 0x02, 0x00, 0x18, 0x01, 0x01, 0x02, 0x01, 0x03, 0x00, 0x04, 0x00, 0x05, 0x00, 0x06, 0x00, 0x07, 0x08, 0x08, 0x00, 0x09, 0x00, 0x0a, 0x00, 0x0b, 0x00, 0x0c, 0x00, 0x0e, 0x04, 0x0f, 0x00, 0x10, 0x00, 0x11, 0x00, 0x12, 0x00, 0x13, 0x06, 0x4b, 0x00]);
+  await send(device, [0x00, 0x00, 0xff, 0xff, 0xff, 0x28, 0x00, 0xd8, 0xd6, 0x02, 0x00, 0x18, 0x01, 0x01, 0x02, 0x01, 0x03, 0x00, 0x04, 0x00, 0x05, 0x00, 0x06, 0x00, 0x07, 0x08, 0x08, 0x00, 0x09, 0x00, 0x0a, 0x00, 0x0b, 0x00, 0x0c, 0x00, 0x0e, 0x04, 0x0f, 0x00, 0x10, 0x00, 0x11, 0x00, 0x12, 0x00, 0x13, 0x06, 0x4b, 0x00])
   // Level 9:nfc.clf.transport:<<< 0000ff00ff00
-  await receive(device, 6);
+  await receive(device, 6)
   // Level 9:nfc.clf.transport:<<< 0000ffffff0300fdd703002600
-  await receive(device, 13);
+  await receive(device, 13)
 
   // Level 9:nfc.clf.rcs380:InSetProtocol 0018
   // Level 9:nfc.clf.transport:>>> 0000ffffff0400fcd60200181000
-  await send(device, [0x00, 0x00, 0xff, 0xff, 0xff, 0x04, 0x00, 0xfc, 0xd6, 0x02, 0x00, 0x18, 0x10, 0x00]);
+  await send(device, [0x00, 0x00, 0xff, 0xff, 0xff, 0x04, 0x00, 0xfc, 0xd6, 0x02, 0x00, 0x18, 0x10, 0x00])
   // Level 9:nfc.clf.transport:<<< 0000ff00ff00
-  await receive(device, 6);
+  await receive(device, 6)
   // Level 9:nfc.clf.transport:<<< 0000ffffff0300fdd703002600
-  await receive(device, 13);
+  await receive(device, 13)
   // DEBUG:nfc.clf.rcs380:send SENSF_REQ 00ffff0100
 
   // Level 9:nfc.clf.rcs380:InCommRF 6e000600ffff0100
   // Level 9:nfc.clf.transport:>>> 0000ffffff0a00f6d6046e000600ffff0100b300
-  await send(device, [0x00, 0x00, 0xff, 0xff, 0xff, 0x0a, 0x00, 0xf6, 0xd6, 0x04, 0x6e, 0x00, 0x06, 0x00, 0xff, 0xff, 0x01, 0x00, 0xb3, 0x00]);
+  await send(device, [0x00, 0x00, 0xff, 0xff, 0xff, 0x0a, 0x00, 0xf6, 0xd6, 0x04, 0x6e, 0x00, 0x06, 0x00, 0xff, 0xff, 0x01, 0x00, 0xb3, 0x00])
   // Level 9:nfc.clf.transport:<<< 0000ff00ff00
-  await receive(device, 6);
+  await receive(device, 6)
   // Level 9:nfc.clf.transport:<<< 0000ffffff1b00e5d70500000000081401000000000000000000000000000000000000f700
-  let idm = (await receive(device, 37)).slice(17, 25);
+  let idm = (await receive(device, 37)).slice(17, 25)
   if (idm.length > 0) {
-    let idmStr = '';
-    for (let i = 0; i < idm.length; i++) {
-      if (idm[i] < 16) {
-        idmStr += '0';
-      }
-      idmStr += idm[i].toString(16);
-    }
-    idmMessage.innerText = "Card Type: Felica  カードのIDm: " + idmStr;
-    updateIDm(idmStr); // ここでIDを送信する( customize: ADD Code )
-    idmMessage.style.display = 'block';
-    waitingMessage.style.display = 'none';
-    return;
+    const idmStr = idm.map(v => dec2HexString(v)).join('')
+    idmMessage.innerText = "Felica ID: " + idmStr
+    updateIDm(idmStr) // ここでIDを送信する( customize: ADD Code )
+    idmMessage.style.display = 'block'
+    waitingMessage.style.display = 'none'
+    return
   }
 
   // DEBUG:nfc.clf.rcs380:rcvd SENSF_RES 01000000000000000000000000000000000000
@@ -142,106 +179,197 @@ async function session(device) {
   // Level 9:nfc.clf.transport:>>> 0000ff00ff00
 
 
-  await send(device,[0x00,0x00,0xff,0xff,0xff,0x03,0x00,0xfd,0xd6,0x06,0x00,0x24,0x00]);
-  await receive(device, 6);
-  await receive(device, 13);
+  await send(device, [0x00, 0x00, 0xff, 0xff, 0xff, 0x03, 0x00, 0xfd, 0xd6, 0x06, 0x00, 0x24, 0x00])
+  await receive(device, 6)
+  await receive(device, 13)
   // <<< 0000ffffff0300fdd707002200
-  
-  await send(device,[0x00,0x00,0xff,0xff,0xff,0x06,0x00,0xfa,0xd6,0x00,0x02,0x03,0x0f,0x03,0x13,0x00]);
-  await receive(device, 6);
-  await receive(device, 13);
+
+  await send(device, [0x00, 0x00, 0xff, 0xff, 0xff, 0x06, 0x00, 0xfa, 0xd6, 0x00, 0x02, 0x03, 0x0f, 0x03, 0x13, 0x00])
+  await receive(device, 6)
+  await receive(device, 13)
   // <<< 0000ffffff0300fdd701002800
-  
-  await send(device, [0x00, 0x00, 0xff, 0xff, 0xff, 0x28, 0x00, 0xd8, 0xd6, 0x02, 0x00, 0x18, 0x01, 0x01, 0x02, 0x01, 0x03, 0x00, 0x04, 0x00, 0x05, 0x00, 0x06, 0x00, 0x07, 0x08, 0x08, 0x00, 0x09, 0x00, 0x0a, 0x00, 0x0b, 0x00, 0x0c, 0x00, 0x0e, 0x04, 0x0f, 0x00, 0x10, 0x00, 0x11, 0x00, 0x12, 0x00, 0x13, 0x06, 0x4b, 0x00]);
-  await receive(device, 6);
-  await receive(device, 13);
+
+  await send(device, [0x00, 0x00, 0xff, 0xff, 0xff, 0x28, 0x00, 0xd8, 0xd6, 0x02, 0x00, 0x18, 0x01, 0x01, 0x02, 0x01, 0x03, 0x00, 0x04, 0x00, 0x05, 0x00, 0x06, 0x00, 0x07, 0x08, 0x08, 0x00, 0x09, 0x00, 0x0a, 0x00, 0x0b, 0x00, 0x0c, 0x00, 0x0e, 0x04, 0x0f, 0x00, 0x10, 0x00, 0x11, 0x00, 0x12, 0x00, 0x13, 0x06, 0x4b, 0x00])
+  await receive(device, 6)
+  await receive(device, 13)
   // <<< 0000ffffff0300fdd703002600
 
-  await send(device, [0x00,0x00,0xff,0xff,0xff,0x0c,0x00,0xf4,0xd6,0x02,0x01,0x00,0x02,0x00,0x05,0x01,0x00,0x06,0x07,0x07,0x0b,0x00]);
-  await receive(device, 6);
-  await receive(device, 13);
+  await send(device, [0x00, 0x00, 0xff, 0xff, 0xff, 0x0c, 0x00, 0xf4, 0xd6, 0x02, 0x01, 0x00, 0x02, 0x00, 0x05, 0x01, 0x00, 0x06, 0x07, 0x07, 0x0b, 0x00])
+  await receive(device, 6)
+  await receive(device, 13)
   // <<< 0000ffffff0300fdd703002600
 
-  await send(device, [0x00,0x00,0xff,0xff,0xff,0x05,0x00,0xfb,0xd6,0x04,0x36,0x01,0x26,0xc9,0x00]);
-  await receive(device, 6);
-  await receive(device, 20);
+  await send(device, [0x00, 0x00, 0xff, 0xff, 0xff, 0x05, 0x00, 0xfb, 0xd6, 0x04, 0x36, 0x01, 0x26, 0xc9, 0x00])
+  await receive(device, 6)
+  await receive(device, 20)
   // <<< 0000ffffff0900f7d705000000000804001800
 
-  await send(device, [0x00,0x00,0xff,0xff,0xff,0x06,0x00,0xfa,0xd6,0x02,0x04,0x01,0x07,0x08,0x14,0x00]);
-  await receive(device, 6);
-  await receive(device, 13);
+  await send(device, [0x00, 0x00, 0xff, 0xff, 0xff, 0x06, 0x00, 0xfa, 0xd6, 0x02, 0x04, 0x01, 0x07, 0x08, 0x14, 0x00])
+  await receive(device, 6)
+  await receive(device, 13)
   // <<< 0000ffffff0300fdd703002600
 
-  await send(device, [0x00,0x00,0xff,0xff,0xff,0x06,0x00,0xfa,0xd6,0x02,0x01,0x00,0x02,0x00,0x25,0x00]);
-  await receive(device, 6);
-  await receive(device, 13);
+  await send(device, [0x00, 0x00, 0xff, 0xff, 0xff, 0x06, 0x00, 0xfa, 0xd6, 0x02, 0x01, 0x00, 0x02, 0x00, 0x25, 0x00])
+  await receive(device, 6)
+  await receive(device, 13)
   // <<< 0000ffffff0300fdd703002600
 
-  await send(device, [0x00,0x00,0xff,0xff,0xff,0x06,0x00,0xfa,0xd6,0x04,0x36,0x01,0x93,0x20,0x3c,0x00]);
-  await receive(device, 6);
-  let idt = (await receive(device, 22)).slice(15, 19);
+  await send(device, [0x00, 0x00, 0xff, 0xff, 0xff, 0x06, 0x00, 0xfa, 0xd6, 0x04, 0x36, 0x01, 0x93, 0x20, 0x3c, 0x00])
+  await receive(device, 6)
+  let idt = (await receive(device, 22)).slice(15, 19)
   // <<< 0000ffffff0c00f4d705000000000800000000490c00
   if (idt.length > 2) {
-    let idtStr = '';
-    for (let i = 0; i < idt.length; i++) {
-      if (idt[i] < 16) {
-        idtStr += '0';
-      }
-      idtStr += idt[i].toString(16);
-    }
-    idmMessage.innerText = "Card Type : MIFARE  カードのID: " + idtStr;
-    updateIDm(idtStr); // ここでIDを送信する( customize: ADD Code )
-    idmMessage.style.display = 'block';
-    waitingMessage.style.display = 'none';
-    return;
-  } else {
-    idmMessage.style.display = 'none';
-    waitingMessage.style.display = 'block';
+    const id = idt.map(v => dec2HexString(v))
+    const idtStr = id.join('')
+    idmMessage.innerText = "MIFARE ID: " + idtStr
+    updateIDm(idtStr) // ここでIDを送信する( customize: ADD Code )
+    idmMessage.style.display = 'block'
+    waitingMessage.style.display = 'none'
+    return
   }
+  idmMessage.style.display = 'none'
+  waitingMessage.style.display = 'block'
+}
+
+const session300 = async (device) => {
+  // let rcs300_com_length = 0
+  const len = 50
+  // let header = []
+  // firmware version
+  await send(device, [0xFF, 0x56, 0x00, 0x00])
+  // ['83', '14', '0', '0', '0', '0', '0', '0', '0', '0', '0', '0', '1', '0', '1', '0', 'ff', 'ff', '4', '1', 'ff', 'ff', '1', '0', 'ff', 'ff', '0', '0', '90', '0']
+  await receive(device, len)
+
+  // endtransparent
+  await send(device, [0xFF, 0x50, 0x00, 0x00, 0x02, 0x82, 0x00, 0x00])
+  // ['83', '07', '00', '00', '00', '00', '01', '02', '00', '00', 'C0', '03', '00', '90', '00', '90', '00']
+  await receive(device, len)
+
+  // startransparent
+  await send(device, [0xFF, 0x50, 0x00, 0x00, 0x02, 0x81, 0x00, 0x00])
+  // ['83', '07', '00', '00', '00', '00', '01', '02', '00', '00', 'C0', '03', '00', '90', '00', '90', '00']
+  await receive(device, len)
+
+  // rf off
+  await send(device, [0xFF, 0x50, 0x00, 0x00, 0x02, 0x83, 0x00, 0x00])
+  // ['83', '07', '00', '00', '00', '00', '01', '02', '00', '00', 'C0', '03', '00', '90', '00', '90', '00']
+  await receive(device, len)
+
+  // rf on
+  await send(device, [0xFF, 0x50, 0x00, 0x00, 0x02, 0x84, 0x00, 0x00])
+  // ['83', '07', '00', '00', '00', '00', '01', '02', '00', '00', 'C0', '03', '00', '90', '00', '90', '00']
+  await receive(device, len)
+
+  // SwitchProtocolTypeF
+  await send(device, [0xff, 0x50, 0x00, 0x02, 0x04, 0x8f, 0x02, 0x03, 0x00, 0x00])
+  // ['C0', '03', '00', '90', '00', '90', '00']
+  await receive(device, len)
+
+  // ferica poling
+  await send(device, [0xFF, 0x50, 0x00, 0x01, 0x00, 0x00, 0x11, 0x5F, 0x46, 0x04, 0xA0, 0x86, 0x01, 0x00, 0x95, 0x82, 0x00, 0x06, 0x06, 0x00, 0xFF, 0xFF, 0x01, 0x00, 0x00, 0x00, 0x00])
+  // poling検出時 *がIDm
+  // ['83', '24', '00', '00', '00', '00', '06', '02', '00', '00']
+  // ['C0', '03', '00', '90', '00', '92', '01', '00', '96', '02', '00', '00', '97', '14', '14', '01', '**', '**', '**', '**', '**', '**', '**', '**', '05', '31', '43', '45', '46', '82', 'B7', 'FF', '00', '03', '90', '00']
+  // poling未検出時
+  // ['83', '07', '00', '00', '00', '00', '98', '02', '00', '00']
+  // ['C0', '03', '02', '64', '01', '90', '00']
+  const poling_res_f = await receive(device, len)
+  if (poling_res_f.length == 46) {
+    const idm = poling_res_f.slice(26, 34).map(v => dec2HexString(v))
+    const idmStr = idm.join('')
+    idmMessage.innerText = "Felica IDm: " + idmStr
+    updateIDm(idmStr) // ここでIDを送信する( customize: ADD Code )
+    idmMessage.style.display = 'block'
+    waitingMessage.style.display = 'none'
+    return
+  }
+  // SwitchProtocolTypeA
+  await send(device, [0xff, 0x50, 0x00, 0x02, 0x04, 0x8f, 0x02, 0x00, 0x03, 0x00])
+  // ['C0', '03', '00', '90', '00', '90', '00']
+  await receive(device, len)
+
+  // GET Card UID
+  await send(device, [0xff, 0xCA, 0x00, 0x00])
+
+  // poling検出時 *がIDm
+  // ['83', '06', '00', '00', '00', '00', '04', '02', '00', '00']
+  // ['**', '**', '**', '**', '90', '00']
+
+  // ['83', '07', '00', '00', '00', '00', '41', '02', '00', '00']
+  // ['C0', '03', '01', '64', '01', '90', '00']
+  // or ['6F', '00']
+  const poling_res_a = await receive(device, len)
+  if (poling_res_a.length == 16) {
+    const id = poling_res_a.slice(10, 14).map(v => dec2HexString(v))
+    const idStr = id.join('')
+    idmMessage.innerText = "Card Type : MIFARE ID: " + idStr
+    updateIDm(idStr) // ここでIDを送信する( customize: ADD Code )
+    idmMessage.style.display = 'block'
+    waitingMessage.style.display = 'none'
+    return
+  }
+
+  idmMessage.style.display = 'none'
+  waitingMessage.style.display = 'block'
 }
 
 startButton.addEventListener('click', async () => {
-  let device;
+  let device
   try {
-    device = await navigator.usb.requestDevice({ filters: [{
-      vendorId: 0x054c,
-      productId: 0x06C3
-    }]});
-    console.log("open");
-    await device.open();
-  } catch (e) {
-    console.log(e);
-    alert(e);
-    throw e;
-  }
-  try {
-    console.log("selectConfiguration");
-    await device.selectConfiguration(1);
-    console.log("claimInterface");
-    await device.claimInterface(0);
-    console.log(device);
-    startButton.style.display = 'none';
-    waitingMessage.style.display = 'block';
-    do {
-      await session(device);
-      await sleep(500);
-    } while (true);
-  } catch (e) {
-    console.log(e);
-    alert(e);
-    try {
-      device.close();
-    } catch (e) {
-      console.log(e);
+    console.log(navigator)
+    // ペアリング済みの対応デバイスが1つだったら、自動選択にする
+    let pearedDevices = await navigator.usb.getDevices()
+    pearedDevices = pearedDevices.filter(d => deviceFilters.map(p => p.productId).includes(d.productId))
+    // 自動選択 or 選択画面
+    device = pearedDevices.length == 1 ? pearedDevices[0] : await navigator.usb.requestDevice({ filters: deviceFilters })
+    deviceModel = deviceModelList[device.productId]
+
+    if (deviceModel == 300) {
+      // RC-S300対応：関数の置き換え
+      send = send300
+      session = session300
     }
-    startButton.style.display = 'block';
-    waitingMessage.style.display = 'none';
-    idmMessage.style.display = 'none';
-    throw e;
+
+    console.log("open")
+    await device.open()
+    console.log(device)
+  } catch (e) {
+    console.log(e)
+    alert(e)
+    throw e
   }
-});
+  try {
+    console.log("selectConfiguration")
+    await device.selectConfiguration(1)
+    console.log("claimInterface")
+    console.log(device)
+    const interface = device.configuration.interfaces.filter(v => v.alternate.interfaceClass == 255)[0]
+    await device.claimInterface(interface.interfaceNumber)
+    deviceEp = {
+      in: interface.alternate.endpoints.filter(e => e.direction == 'in')[0].endpointNumber,
+      out: interface.alternate.endpoints.filter(e => e.direction == 'out')[0].endpointNumber,
+    }
+    startButton.style.display = 'none'
+    waitingMessage.style.display = 'block'
 
+    while (true) {
+      await session(device)
+    }
 
+  } catch (e) {
+    console.log(e)
+    alert(e)
+    try {
+      device.close()
+    } catch (e) {
+      console.log(e)
+    }
+    startButton.style.display = 'block'
+    waitingMessage.style.display = 'none'
+    idmMessage.style.display = 'none'
+    throw e
+  }
+})
 
 // IDMの変更を検知する
 let beforeIdm = ''
@@ -250,7 +378,7 @@ let beforeIdm = ''
  * IDMの変更を検知し、出席登録処理を呼び出す
  * @param {Felica IDM} idm 
  */
- const updateIDm = (idm) => {
+const updateIDm = (idm) => {
 
   const sound = document.getElementById('read_sound')
   sound.currentTime = 0
@@ -259,12 +387,12 @@ let beforeIdm = ''
 
   let favDialog = document.getElementById('favDialog')
   if (favDialog.open) return
-  
+
   if (inputIdm && idm.length === 8 && idm !== beforeIdm) { // 文字長さのチェックをここで入れているが、動作状況を見て必要なら外す
-    inputIdm.value = idm;
-    beforeIdm = inputIdm.value;
-    // inputIdm.value = "";
-    console.log("IDm updated.");
-    attend(idm);
+    inputIdm.value = idm
+    beforeIdm = inputIdm.value
+    // inputIdm.value = ""
+    console.log("IDm updated.")
+    attend(idm)
   }
 }
