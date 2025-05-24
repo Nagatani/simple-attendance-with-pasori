@@ -6,13 +6,17 @@
 
     <title>出席登録 {{ section_title }} - 第{{ section_id }}回</title>
 
+    <!-- UIkit CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.21.13/dist/css/uikit.min.css" />
     <link rel="stylesheet" href="{{ url_for('static', filename='custom.css') }}">
 
+    <!-- UIkit JS -->
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.21.13/dist/js/uikit.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.21.13/dist/js/uikit-icons.min.js"></script>
 
 
-
-    <script src="{{ url_for('static', filename='felica.js') }}" defer></script>
-    <script src="{{ url_for('static', filename='append.js') }}" defer></script>
+    <script type="module" src="{{ url_for('static', filename='felica.js') }}" defer></script>
+    <script type="module" src="{{ url_for('static', filename='app.js') }}" defer></script>
   </head>
   <body>
     <div class="uk-navbar-container uk-margin">
@@ -36,7 +40,7 @@
     <div class="uk-container uk-container-expand">
       <h1 id="hedding1" class="uk-heading-xlarge uk-text-center"></h1>
       <hr class="uk-divider-icon">
-      <div id="attendedList" style="gap: 8px; text-transform: none !important" class="uk-flex uk-flex-wrap uk-flex-wrap-around">
+      <div id="attendedList">
       </div>
      
     </div>
