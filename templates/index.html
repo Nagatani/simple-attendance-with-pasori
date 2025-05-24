@@ -6,14 +6,7 @@
 
     <title>出席登録 {{ section_title }} - 第{{ section_id }}回</title>
 
-    <!-- UIkit CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.21.13/dist/css/uikit.min.css" />
-
-    <!-- UIkit JS -->
-    <script src="https://cdn.jsdelivr.net/npm/uikit@3.21.13/dist/js/uikit.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/uikit@3.21.13/dist/js/uikit-icons.min.js"></script>
-
-
+    <link rel="stylesheet" href="{{ url_for('static', filename='custom.css') }}">
     <script src="{{ url_for('static', filename='felica.js') }}" defer></script>
     <script src="{{ url_for('static', filename='append.js') }}" defer></script>
   </head>
@@ -26,9 +19,9 @@
           </div>
           <div class="uk-navbar-right">
             <button id="start" class="uk-button uk-button-large uk-button-default uk-width-1-1 uk-text-capitalize">SETUP</button>
-            <div id="waiting" class="uk-margin" style="display: none;">
+            <div id="waiting" style="display: none;">
               <button class="uk-button uk-button-large uk-button-default uk-width-1-1" disabled>
-                <span uk-spinner="ratio: 0.75"></span>
+                <div class="custom-spinner"></div>
               </button>
             </div>
             <div id="idm" class="uk-alert uk-alert-success uk-text-center" uk-alert style="display: none;"></div>
@@ -39,7 +32,7 @@
     <div class="uk-container uk-container-expand">
       <h1 id="hedding1" class="uk-heading-xlarge uk-text-center"></h1>
       <hr class="uk-divider-icon">
-      <div id="attendedList" style="gap: 8px; text-transform: none !important" class="uk-flex uk-flex-wrap uk-flex-wrap-around">
+      <div id="attendedList">
       </div>
      
     </div>
@@ -49,7 +42,7 @@
 
     <dialog id="favDialog">
       <div class="uk-position-top-left">
-        <a href="#" onclick="document.getElementById('favDialog').close(); return false;"><span uk-icon="close"></span></a>
+        <a href="#" class="custom-close-icon" onclick="document.getElementById('favDialog').close(); return false;">&times;</a>
       </div>
       <form class="uk-margin uk-form-stacked" id="register-form">
         <div class="uk-margin" id="dialogMessage">
@@ -71,7 +64,7 @@
     </dialog>
     <dialog id="forgotCardDialog">
       <div class="uk-position-top-left">
-        <a href="#" onclick="document.getElementById('forgotCardDialog').close(); return false;"><span uk-icon="close"></span></a>
+        <a href="#" class="custom-close-icon" onclick="document.getElementById('forgotCardDialog').close(); return false;">&times;</a>
       </div>
       <form class="uk-margin uk-form-stacked" id="register-form">
         <div class="uk-margin" id="forgotCardDialogMessage">
