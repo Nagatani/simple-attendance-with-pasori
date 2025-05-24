@@ -75,14 +75,21 @@ const showRegisterErrorDialogAndFocus = () => {
 };
 
 /**
- * 新規登録成功後、ダイアログを閉じ、学籍番号入力欄をクリアします。
+ * 新規登録成功後、ダイアログを閉じ、学籍番号入力欄とカードID入力欄をクリアします。
  * favDialog（出席登録時のエラーダイアログ）を使用します。
  */
 const closeRegisterDialogAndClearStudentId = () => {
-  favDialog.close();
+  const favDialog = document.getElementById('favDialog'); // 関数内で取得
+  if (favDialog) {
+    favDialog.close();
+  }
   const inputStudntId = document.getElementById('input_student_id');
   if (inputStudntId) {
     inputStudntId.value = '';
+  }
+  const inputIdmField = document.getElementById('input_idm'); // Card ID field
+  if (inputIdmField) {
+    inputIdmField.value = ''; // Clear card_id field
   }
 };
 

@@ -215,3 +215,23 @@ if (typeof setCardReadCallback === 'function') {
 } else {
   console.error("setCardReadCallback is not defined in felica.js or not loaded yet.");
 }
+
+// 登録ダイアログが閉じられた際のイベントリスナー
+const favDialogElement = document.getElementById('favDialog');
+if (favDialogElement) {
+  favDialogElement.addEventListener('close', () => {
+    console.log('Registration dialog (favDialog) closed.');
+    if (typeof clearBeforeIdm === 'function') {
+      clearBeforeIdm(); // felica.jsの関数を呼び出す
+    }
+    // ダイアログが閉じたときに inputIdm の値をクリアする処理は
+    // ui.js の closeRegisterDialogAndClearStudentId に集約されたのでここでは不要。
+    // ただし、ユーザーがESCキーや閉じるボタンで明示的に閉じた場合、
+    // closeRegisterDialogAndClearStudentId が呼ばれない可能性があるので、
+    // inputIdm のクリアはここでも行う方が堅牢かもしれない。
+    // 今回はまず beforeIdm のクリアに集中する。
+    // 必要であれば、inputIdm のクリアも ui.js 側で行う。
+    // → ui.js の closeRegisterDialogAndClearStudentId で input_idm もクリアするようにしたので、
+    // append.js 側での inputIdm クリアは不要。
+  });
+}

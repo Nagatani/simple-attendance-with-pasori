@@ -495,3 +495,12 @@ const setCardReadCallback = (callback) => {
     console.error("Failed to set card read callback. Provided argument is not a function.");
   }
 };
+
+/**
+ * 前回読み取ったカードIDのキャッシュ（beforeIdm）をクリアします。
+ * これにより、同じカードを連続して読み取った場合に再度処理されるようになります。
+ */
+function clearBeforeIdm() {
+  beforeIdm = '';
+  console.log('beforeIdm has been cleared.');
+}
