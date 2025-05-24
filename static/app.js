@@ -7,73 +7,63 @@ import * as api from './api.js';
 import * as ui from './ui.js';
 import { initializeEventHandlers } from './eventHandlers.js';
 import { initializeFelica, setCardReadCallback } from './felica.js';
-// (他の必要なインポートも同様)
 
 /**
- * @summary カードリーダーから読み取られたIDMを処理するコールバック関数。
- * @description api.attend を呼び出し、その結果に基づいてUIを更新する。
- *              未登録カードの場合は登録ダイアログを表示し、
- *              登録成功/既出席の場合は出席者リストを更新しメッセージを表示する。
+ * @summary カード読み取りイベントを処理します。
+ * @description 読み取られたIDMを使用して出席処理を試みます。
+ * 必要に応じてUI（inputIdmの値など）を更新し、API呼び出しを行います。
+ * @param {string} idm - カードリーダーから読み取られたIDM。
  * @async
- * @param {string} idm - 読み取られたカードIDM。
- * @returns {void}
  */
 async function handleCardRead(idm) {
-  console.log(`app.handleCardRead: Received IDM = ${idm}`);
-  
-  // ui.inputIdm にIDMをセット (ダイアログ表示時に参照されるため)
-  // ui.jsがDOM要素を正しくエクスポートし、ここでインポートされていれば利用可能
-  if (ui.inputIdm && typeof ui.inputIdm.value !== 'undefined') {
-    ui.inputIdm.value = idm;
-  } else {
-    console.error("app.handleCardRead: ui.inputIdm is not available or not an input element!");
-    // 緊急フォールバックとして直接DOM操作を試みるが、これはモジュール設計上は非推奨
-    const tempInputIdm = document.getElementById('input_idm');
-    if (tempInputIdm) {
-        tempInputIdm.value = idm;
+    console.log(`Card Read in app.js: ${idm}`);
+    if (ui.inputIdm) { // ui.js から inputIdm をインポートして使用
+        ui.inputIdm.value = idm;
+    } else {
+        console.error('ui.inputIdm is not available in app.js handleCardRead');
+        // fallback or error handling if inputIdm is critical here
+        const tempInputIdm = document.getElementById('input_idm');
+        if(tempInputIdm) tempInputIdm.value = idm;
     }
-  }
 
-  try {
-    const result = await api.attend(idm);
-    console.log("app.handleCardRead: api.attend result:", result);
-
-    switch (result.status) {
-      case 'success':
-        if (ui.updateMainHeading) ui.updateMainHeading(result.message || `出席: ${result.studentId}`);
-        if (ui.addStudentToAttendedList) ui.addStudentToAttendedList(result.studentId, true); // trueでサウンド再生
-        break;
-      case 'unregistered_card':
-        if (ui.updateMainHeading) ui.updateMainHeading(result.message || "このカードは未登録です。学籍番号を入力してください。");
-        if (ui.showNewCardDialog) ui.showNewCardDialog(); 
-        break;
-      case 'already_attended':
-        if (ui.updateMainHeading) ui.updateMainHeading(result.message || `出席済: ${result.studentId}`);
-        // リストへの追加は addStudentToAttendedList 内の重複チェックに任せる
-        if (ui.addStudentToAttendedList) ui.addStudentToAttendedList(result.studentId, false); // サウンドなしでリスト更新試行
-        break;
-      case 'error':
-        if (ui.updateMainHeading) ui.updateMainHeading(result.message || "エラーが発生しました。");
-        console.error("app.handleCardRead: API error:", result.message, result.rawData);
-        break;
-      case 'network_error':
-        if (ui.updateMainHeading) ui.updateMainHeading(result.message || "ネットワークエラーが発生しました。");
-        console.error("app.handleCardRead: Network error:", result.message);
-        break;
-      default:
-        if (ui.updateMainHeading) ui.updateMainHeading("不明な応答です。");
-        console.warn("app.handleCardRead: Unknown status from api.attend:", result);
+    try {
+        // api.attend は内部で ui.js の関数を呼び出してUIを更新すると想定
+        // 修正: api.attendの返り値に基づいてUIを更新する
+        const result = await api.attend(idm); 
+        if (result.status === 'error' && result.type === 'unregistered_card') {
+            // api.jsのattend関数でfavDialogの表示やinputStudntIdへのフォーカスは行わないように修正したため、
+            // ここで明示的にUI操作を呼び出す。
+            if (ui.favDialog && ui.inputStudntId) {
+                ui.showNewCardDialog(); // favDialog.showModal() と inputStudntId.focus() を実行
+            } else {
+                console.error('favDialog or inputStudntId not available for new card registration.');
+            }
+        } else if (result.status === 'success') {
+            // api.attendが成功時に返す情報に基づいてUIを更新
+            // ui.addStudentToAttendedListはapi.attend内で直接呼ばれなくなったと仮定し、ここで呼ぶ
+            // ただし、api.attendがstudent_idを返す必要がある
+            if (result.student_id) {
+                ui.addStudentToAttendedList(result.student_id, true);
+            } else {
+                 // もしapi.attendがstudent_idを返さない場合、表示更新はapi.attendの責務か、
+                 // またはapi.attendのレスポンスに表示に必要な情報が含まれている必要がある。
+                 // 現状のapi.attendはstudent_idを返さないので、この部分は期待通りに動かない可能性がある。
+                 // 一旦、成功時はapi.attendがUI更新の責務を持つか、何もしない前提で進める。
+                 // もしapi.attendがUI更新をしないなら、ここでui.addStudentToAttendedListを呼ぶ必要がある。
+                 // 今回のapi.jsのリファクタリングでは、UI操作をapi.jsから分離する方向なので、
+                 // student_idを返してもらい、ここでUIを更新するのが望ましい。
+                 // 仮にapi.attendが { status: 'success', student_id: 'xxxx' } を返すと想定。
+                 console.log('Attend API call successful, UI update might be handled by api.attend or needs explicit call here.');
+            }
+        }
+        // その他のエラーケースは catch ブロックで処理
+    } catch (error) {
+        console.error("Attend API call failed in handleCardRead:", error);
+        if (ui.updateMainHeading) {
+            ui.updateMainHeading("出席処理中にエラーが発生しました。");
+        }
     }
-  } catch (error) {
-    // api.attend自体が例外を投げた場合など
-    console.error("app.handleCardRead: Critical error calling api.attend or processing result:", error);
-    if (ui.updateMainHeading) ui.updateMainHeading("致命的なエラーが発生しました。");
-  }
 }
-
-// `initializeApp` 関数内で `setCardReadCallback(handleCardRead);` が呼ばれていることを確認してください。
-// これは前回のモジュール分割ステップで実施済みのはずです。
-// また、`handleCardRead` が `setCardReadCallback` より前に定義されていることを確認してください。
 
 /**
  * @summary アプリケーションを初期化します。

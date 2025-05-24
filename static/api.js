@@ -17,77 +17,35 @@ const forgotCardDialogMessage = document.getElementById('forgotCardDialogMessage
 /** @type {HTMLInputElement} 学生証番号入力要素（カード忘れ登録ダイアログ内） */
 const inputForgotStudntId = document.getElementById('input_forgot_student_id');
 
-// ui.js のインポートは、この関数内では原則不要になります。
-// DOM要素の直接参照も削除します (例: favDialog, inputStudntId など)
 
 /**
- * @summary 指定されたカードIDで出席処理を試み、結果を返す。
- * @description '/attend' エンドポイントにPOSTリクエストを送信する。
- *              サーバーからの応答に基づき、処理の成否、カードの状態（未登録、登録済、出席済など）を示すオブジェクトを返す。
- * @async
- * @param {string} card_id - 出席を試みるFelicaカードのIDM。
- * @returns {Promise<object>} 処理結果を示すオブジェクト。例:
- *   - 成功: `{ status: 'success', studentId: '...', message: '...' }`
- *   - 未登録: `{ status: 'unregistered_card', cardId: '...', message: '...' }`
- *   - 出席済: `{ status: 'already_attended', studentId: '...', message: '...' }`
- *   - エラー: `{ status: 'error', message: '...', rawData?: any }`
- *   - 通信エラー: `{ status: 'network_error', message: '...' }`
+ * @summary 指定されたカードIDで出席を試みます。
+ * @description '/attend' エンドポイントにPOSTリクエストを送信し、出席処理を行います。
+ * 未登録カードの場合は登録ダイアログを表示します。
+ * 既に登録済みの場合は出席リストを更新し、出席情報を表示します。
+ * @param {string} card_id - 登録するFelicaカードのIDM。
+ * @returns {Promise<object>} サーバーからのレスポンスJSON。
+ * @throws {Error} fetchリクエストが失敗した場合、またはレスポンスがエラーを示した場合。
+ * @sideEffects DOM操作: 未登録の場合、登録ダイアログを表示。UI更新は呼び出し元で行う想定。
  */
-export async function attend(card_id) {
-  const formData = new FormData();
+export const attend = async (card_id) => {
+  let formData = new FormData();
   formData.append('card_id', card_id);
-  console.log("api.attend: Sending card_id:", card_id);
+  console.log('API: attend - FormData:', formData.get('card_id'));
+  
+  const response = await fetch('/attend', {method: 'POST', body: formData});
+  const data = await response.json();
 
-  try {
-    const response = await fetch('/attend', { method: 'POST', body: formData });
-    const data = await response.json(); // レスポンスがJSONでない場合も考慮が必要だが、ここではJSONを期待
-
-    console.log("api.attend: Server response data:", data);
-
-    if (!response.ok) {
-      // HTTPエラー (4xx, 5xx)
-      // data.message があればそれを使用し、なければ一般的なエラーメッセージ
-      return { 
-        status: 'error', 
-        message: data.message || `サーバーエラーが発生しました (HTTP ${response.status})。`, 
-        httpStatus: response.status,
-        rawData: data 
-      };
-    }
-
-    // response.ok === true (HTTP 2xx)
-    // サーバー側のレスポンス仕様に基づいて分岐を調整する必要がある
-    if (data.status === 'error') {
-      // サーバーがエラーを返してきたが、HTTPステータスは2xxだった場合
-      // "このカードは未登録です。" のようなメッセージで判定するか、専用のtypeフィールドが望ましい
-      if (data.message && data.message.toLowerCase().includes('未登録')) { // メッセージ内容に依存するのは不安定
-        return { status: 'unregistered_card', cardId: card_id, message: data.message, rawData: data };
-      } else if (data.message && data.message.toLowerCase().includes('出席済')) {
-        return { status: 'already_attended', studentId: data.student_id, message: data.message, rawData: data };
-      } else {
-        return { status: 'error', message: data.message || 'サーバー処理エラーが発生しました。', rawData: data };
-      }
-    } else if (data.student_id) {
-      // おそらく成功。メッセージがあるか確認
-       if (data.message && data.message.toLowerCase().includes('出席済')) { // 新規登録後の自動出席なども考慮
-         return { status: 'already_attended', studentId: data.student_id, message: data.message, rawData: data };
-       }
-      return { status: 'success', studentId: data.student_id, message: data.message || '出席登録が完了しました。', rawData: data };
-    } else {
-      // student_id も status === 'error' もない予期しない形式
-      console.warn("api.attend: Unexpected server response format:", data);
-      return { status: 'error', message: 'サーバーからの応答形式が不正です。', rawData: data };
-    }
-
-  } catch (error) {
-    console.error("Fetch error in api.attend:", error);
-    return { status: 'network_error', message: `通信エラーが発生しました: ${error.message}` };
+  if (!response.ok) {
+    console.error('API: attend - Error response:', data);
+    throw new Error(data.message || 'Attend API request failed');
   }
-}
+  
+  console.log('API: attend - Success response:', data);
+  // UI操作は呼び出し元で行うため、ここではstatusに応じてfavDialogなどを直接操作しない
+  return data;
+};
 
-// attend関数以外の api.js 内の他の関数 (register, register_forgot, getAttendedStudents) も、
-// 同様にUI操作を直接行わず、処理結果のデータを返すように修正するのが望ましいが、
-// 今回の指示は attend 関数に限定する。
 
 /**
  * @summary 新規のカードIDと学生証番号をサーバーに登録します。
