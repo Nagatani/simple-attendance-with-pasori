@@ -33,6 +33,8 @@ const deviceModelList = {
 // --- モジュールスコープ変数 ---
 /** @type {null | ((idm: string) => void)} カード読み取り時のコールバック関数 */
 let cardReadCallback = null;
+/** @type {null|HTMLAudioElement} カード読み取り音のAudio要素 */
+let readSound = null; 
 /**
  * @type {number|undefined}
  * @description 現在接続されているデバイスのモデル番号 (380 or 300)。
@@ -353,24 +355,35 @@ export function setCardReadCallback(callback) {
  */
 const updateIDm = (idm) => {
   // カード読み取り成功時の即時フィードバックとして音声を再生
-  const sound = document.getElementById('read_sound');
-  if (sound) { // サウンド要素の存在確認
-    sound.currentTime = 0;
-    sound.muted = false;
-    sound.play().catch(e => console.error("Error playing read sound:", e));
+  // IDMが有効かチェック (null, undefined, 空文字列でなく、一定の長さがあるか)
+  // FeliCa IDMは16文字(8バイト)、MIFARE UIDは通常8文字(4バイト)または14文字(7バイト)。
+  // ここでは最小の有効な長さとして8文字（16進で4バイト分）を仮定。
+  if (!idm || typeof idm !== 'string' || idm.length < 8) {
+    // console.debug("updateIDm: Invalid or too short IDM received, or not a string. Skipping. IDM:", idm);
+    return;
   }
 
-  // inputIdm DOM要素の直接操作は行わない (app.jsの責務)
-  // favDialog.open のチェックも app.js の handleCardRead で行うべき
+  // カード読み取り音を再生 (readSound が initializeFelica で初期化されている前提)
+  if (readSound) {
+    readSound.currentTime = 0;
+    readSound.muted = false;
+    readSound.play().catch(e => console.error("Error playing read_sound:", e));
+  } else {
+    console.warn("readSound element not initialized in felica.js updateIDm");
+  }
 
-  if (idm && idm.length > 0 && idm !== beforeIdm) { 
-    beforeIdm = idm;
-    console.log("Felica.js: IDm updated, calling cardReadCallback with:", idm);
+  // 前回と同じIDMでなければ処理 (連続読み取り防止)
+  if (idm !== beforeIdm) {
+    // console.log("updateIDm: New IDm received:", idm);
+    beforeIdm = idm; // 今回処理するIDMとして記憶
+
     if (cardReadCallback) {
-        cardReadCallback(idm); // 登録されたコールバック関数を実行
+      cardReadCallback(idm);
     } else {
-        console.warn("Felica.js: cardReadCallback is not set.");
+      console.warn("updateIDm: Card read callback is not set.");
     }
+  } else {
+    // console.debug("updateIDm: Duplicate IDm received, skipping callback:", idm);
   }
 };
 
@@ -393,6 +406,7 @@ export async function initializeFelica() {
   const startButton = document.getElementById('start'); 
   const idmMessage = document.getElementById('idm');     // app.js がUIを制御するため、ここでの直接操作は最小限に
   const waitingMessage = document.getElementById('waiting'); // 同上
+  readSound = document.getElementById('read_sound'); // readSoundを初期化
 
   if (!startButton) {
     console.error("Felica.js: startButton not found. Felica initialization cannot proceed.");
