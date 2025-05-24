@@ -469,3 +469,47 @@ dialog .uk-margin:last-child {
     text-decoration: none;
     outline: none;
 }
+
+/* Attended List Grid Layout */
+#attendedList {
+    display: grid !important; /* Override .uk-flex if that class is still on the element */
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); /* Each item at least 100px wide */
+    gap: 8px; /* Space between items, similar to the original inline style */
+    padding: 8px; /* Optional: padding for the container itself */
+    /* Ensure any properties from .uk-flex, .uk-flex-wrap, .uk-flex-wrap-around 
+       that might conflict with grid behavior are overridden or reset if necessary.
+       For example, justify-content, align-items, etc. are flex-specific.
+       `display: grid` itself handles most of this.
+    */
+}
+
+/* Attended List Button Item Styling */
+#attendedList > .uk-button.uk-button-default, /* Be more specific to target the buttons added by JS */
+#attendedList > button { /* If buttons are added without .uk-button classes in future */
+    padding: 4px 6px;       /* Significantly reduced padding */
+    font-size: 12px;        /* Smaller font size, e.g., 0.75rem or 12px */
+    line-height: 1.5;       /* Adjusted line height for smaller font */
+    min-height: 0;          /* Reset min-height from general .uk-button */
+    height: 26px;           /* Fixed small height for uniformity */
+    width: 100%;            /* Make button fill the grid cell width */
+    box-sizing: border-box; /* Ensure padding/border are within the width/height */
+    
+    text-transform: none !important; /* Ensure student IDs are not capitalized */
+    
+    overflow: hidden;         /* Prevent content from spilling */
+    text-overflow: ellipsis;  /* Show ... if text is too long */
+    white-space: nowrap;      /* Keep text on a single line */
+
+    /* Overriding general .uk-button-default for a slightly more compact look if needed */
+    background-color: #fdfdfd; /* Slightly lighter background */
+    border: 1px solid #e0e0e0; /* Lighter border */
+    color: #333;
+    border-radius: 3px;
+    font-weight: normal; /* Reset font-weight if .uk-button made it bold */
+}
+
+#attendedList > .uk-button.uk-button-default:hover,
+#attendedList > button:hover {
+    background-color: #f0f0f0; /* Slightly darker hover */
+    border-color: #d0d0d0;
+}
