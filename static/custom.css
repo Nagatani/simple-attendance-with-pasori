@@ -1,298 +1,471 @@
-/* Basic body styling */
+/* Basic body styles inspired by UI Kit */
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-  margin: 0;
-  padding: 0;
-  background-color: #fff;
-  color: #333;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    font-size: 16px;
+    line-height: 1.5;
+    color: #333; /* Common text color */
+    background-color: #fff; /* Common background color */
+    margin: 0; /* Remove default browser margin */
 }
 
-/* Navbar container */
-.navbar-container {
-  background: #f8f8f8;
-  border-bottom: 1px solid #e5e5e5;
-  margin-bottom: 20px; /* Replicates uk-margin */
+/* A general container style similar to uk-container */
+/* We will use UI Kit's class names for now to override them, 
+   and later decide if we want to rename them in HTML or keep them. */
+.uk-container {
+    max-width: 1200px; /* Default UI Kit container width */
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 15px; /* UI Kit default padding */
+    padding-right: 15px; /* UI Kit default padding */
+    box-sizing: border-box; /* Important for consistent padding behavior */
 }
 
-/* Container */
-.container {
-  max-width: 1200px;
-  margin-left: auto;
-  margin-right: auto;
-  padding-left: 15px;
-  padding-right: 15px;
+.uk-container-expand {
+    max-width: none; /* uk-container-expand typically has no max-width */
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 25px; /* UI Kit default padding for -expand can be larger */
+    padding-right: 25px; /* UI Kit default padding for -expand can be larger */
+    box-sizing: border-box;
 }
 
-/* Navbar */
-.navbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  min-height: 80px;
+/* A general margin utility similar to uk-margin */
+.uk-margin {
+    margin-bottom: 20px; /* Common UI Kit margin */
 }
 
-/* Navbar left section */
-.navbar-left {
-  display: flex;
-  align-items: center;
+/* Ensure headings have a bit of space as well, can be refined later */
+h1, h2, h3, h4, h5, h6 {
+    margin-top: 0;
+    margin-bottom: 0.5em; /* Basic spacing, UI Kit might have more specific values */
+    font-weight: 500; /* Common heading weight */
 }
 
-/* Navbar item */
-.navbar-item {
-  display: flex;
-  align-items: center;
-  padding: 0 15px;
+/* Navbar styles based on UI Kit */
+.uk-navbar-container {
+    background: #f8f8f8; /* Common navbar background color */
+    border-bottom: 1px solid #e5e5e5; /* Common navbar border */
+    /* uk-margin is already defined for margin-bottom if the element also has uk-margin class */
+    /* Add padding directly to navbar-container if it's always needed */
+    padding-top: 10px;
+    padding-bottom: 10px;
 }
 
-/* Logo */
-.logo {
-  font-size: 1.5rem; /* Approximate uk-logo size */
-  font-weight: bold;
-  text-decoration: none;
-  color: #333;
+.uk-navbar {
+    display: flex;
+    justify-content: space-between; /* Aligns left and right sections */
+    align-items: center;
+    min-height: 60px; /* Common navbar height, adjust as per actual UI Kit style */
+    /* .uk-container handles width and padding if used within uk-navbar-container > uk-container > uk-navbar */
 }
 
-/* Navbar right section */
-.navbar-right {
-  display: flex;
-  align-items: center;
+.uk-navbar-left,
+.uk-navbar-right {
+    display: flex;
+    align-items: center;
 }
 
-/* General button styling */
-.button {
-  padding: 10px 20px; /* Approximate uk-button-large padding */
-  border: 1px solid #e5e5e5; /* Replicates uk-button-default border */
-  text-align: center;
-  background-color: #fff; /* Replicates uk-button-default background */
-  color: #333; /* Replicates uk-button-default text color */
-  font-size: 1.25rem; /* Approximate uk-button-large font size */
-  line-height: 1.5;
-  cursor: pointer;
-  display: inline-block;
-  text-decoration: none;
+.uk-navbar-item { /* Applied to individual items like logo or text */
+    padding: 0 15px; /* Horizontal padding for items */
+    display: flex;
+    align-items: center;
+    min-height: 60px; /* Ensure items can vertically align if navbar is taller */
+    text-decoration: none;
+    color: #333; /* Default text color for items */
 }
 
-/* Secondary button styling */
-.button-secondary {
-  background-color: #1e87f0; /* Replicates uk-button-secondary background */
-  color: #fff; /* Replicates uk-button-secondary text color */
-  border-color: #1e87f0;
-  font-size: 0.875rem; /* Approximate uk-button-small font size */
-  padding: 5px 10px; /* Approximate uk-button-small padding */
+.uk-logo,
+a.uk-logo { /* Ensure links styled as logos are also covered */
+    font-size: 1.5rem; /* Larger font for logo */
+    font-weight: bold;
+    color: #333; /* Typically, logos inherit or have a specific color */
+    text-decoration: none;
 }
 
-/* Alert styling */
-.alert {
-  padding: 15px;
-  margin-bottom: 20px;
-  border: 1px solid transparent;
-  border-radius: 4px;
+/* Spacing for direct children of navbar-left/right, e.g., multiple buttons */
+.uk-navbar-left > *,
+.uk-navbar-right > * {
+    /* Add margin if they are separate block-like elements. 
+       If they are inline or inline-block, this might be okay.
+       UI Kit often uses margin on the items themselves or specific utility classes.
+       Let's assume items might need some separation.
+    */
+    margin-left: 10px; /* Add space between items */
 }
 
-.alert-success {
-  color: #3c763d;
-  background-color: #dff0d8;
-  border-color: #d6e9c6;
+.uk-navbar-left > *:first-child,
+.uk-navbar-right > *:first-child {
+    margin-left: 0; /* No margin for the first item in a group */
 }
 
-/* Heading xlarge */
-.heading-xlarge {
-  font-size: 3rem; /* Approximate uk-heading-xlarge */
-  font-weight: 300;
-  line-height: 1.2;
-  text-align: center; /* Replicates uk-text-center */
-  margin-top: 20px;
-  margin-bottom: 20px;
+/* Button styles based on UI Kit */
+.uk-button {
+    display: inline-block;
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+    margin: 0; /* Reset margin, can be overridden by utility classes like uk-margin */
+    padding: 0 20px; /* Horizontal padding */
+    vertical-align: middle;
+    font-size: 1rem; /* Default button font size */
+    line-height: 38px; /* Default button line height, makes button ~40px tall with 1px border */
+    text-align: center;
+    text-decoration: none;
+    border-radius: 4px; /* Common border radius */
+    border: 1px solid transparent; /* Default border */
+    cursor: pointer;
+    transition: 0.1s ease-in-out; /* Smooth transition for hover effects */
+    transition-property: background-color, color, border-color;
 }
 
-/* Divider icon */
-.divider-icon {
-  height: 20px;
-  background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle fill='none' stroke='%23ccc' stroke-width='2' cx='10' cy='10' r='7'%3E%3C/circle%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: center;
-  margin-top: 20px;
-  margin-bottom: 20px;
-  border: none;
+.uk-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
-/* Flex container for attended list */
-.flex-container {
-  display: flex;
-  flex-wrap: wrap; /* uk-flex-wrap */
-  justify-content: space-around; /* uk-flex-wrap-around */
-  gap: 8px;
-  text-transform: none !important;
+.uk-button-default {
+    background-color: #f8f8f8; /* Default button background */
+    color: #333; /* Default button text color */
+    border-color: #e5e5e5; /* Default button border color */
 }
 
-/* Form stacked */
-.form-stacked .form-label {
-  display: block;
-  margin-bottom: 5px;
+.uk-button-default:hover,
+.uk-button-default:focus {
+    background-color: #e7e7e7;
+    color: #333;
+    border-color: #d4d4d4;
+    outline: none;
 }
 
-.form-stacked .form-controls {
-  margin-bottom: 15px;
+.uk-button-default:disabled:hover {
+    background-color: #f8f8f8; /* Keep original style when disabled */
+    border-color: #e5e5e5;
 }
 
-/* Form label */
-.form-label {
-  font-weight: bold;
-  font-size: 0.875rem;
+.uk-button-large {
+    font-size: 1.125rem; /* Slightly larger text */
+    line-height: 48px; /* Makes button ~50px tall */
+    padding: 0 25px; /* More horizontal padding */
 }
 
-/* Form controls */
-.form-controls {
-  /* No specific styles needed beyond what .form-stacked provides for layout */
+.uk-button-secondary {
+    background-color: #222; /* UI Kit secondary is often dark or a distinct color */
+    color: #fff;
+    border-color: #222; /* Border matches background for a solid look */
 }
 
-/* Input fields */
-.input {
-  width: 100%;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  box-sizing: border-box; /* Ensures padding and border don't add to width */
-  font-size: 1rem;
+.uk-button-secondary:hover,
+.uk-button-secondary:focus {
+    background-color: #111; /* Darken on hover */
+    color: #fff;
+    border-color: #111;
+    outline: none;
 }
 
-/* Position bottom (fixed) */
-.position-bottom {
-  position: fixed !important;
-  bottom: 20px; /* Adjust as needed */
-  left: 20px;  /* Adjust as needed */
+.uk-button-secondary:disabled:hover {
+    background-color: #222;
+    border-color: #222;
 }
 
-/* Position top-left */
-.position-top-left {
-  position: absolute;
-  top: 10px; /* Adjust as needed */
-  left: 10px; /* Adjust as needed */
+.uk-button-small {
+    font-size: 0.875rem; /* Smaller text */
+    line-height: 28px; /* Makes button ~30px tall */
+    padding: 0 15px; /* Less horizontal padding */
 }
 
-/* Dialog styling */
+/* Alert styles based on UI Kit */
+.uk-alert {
+    position: relative; /* For potential close buttons */
+    margin-bottom: 20px; /* Consistent with uk-margin */
+    padding: 15px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+
+.uk-alert-success {
+    background-color: #f2f9f2; /* Light green background for success */
+    color: #3c763d; /* Darker green text for success, good contrast */
+    border-color: #d6e9c6; /* Softer green border for success */
+}
+
+/* Form styles based on UI Kit */
+.uk-form-label {
+    display: block;
+    margin-bottom: 8px; /* Space between label and control */
+    font-weight: 500; /* Slightly bolder than normal text */
+    font-size: 0.95rem; /* Slightly smaller font for labels */
+}
+
+.uk-input,
+input.uk-input[type="text"], /* Targeting common text inputs specifically */
+textarea.uk-textarea, /* Basic styling for textareas if used */
+select.uk-select { /* Basic styling for selects if used */
+    box-sizing: border-box;
+    width: 100%;
+    height: 40px; /* Consistent height with default button */
+    padding: 6px 12px; /* Vertical and horizontal padding */
+    border: 1px solid #ccc; /* Common input border color */
+    border-radius: 4px; /* Consistent border radius */
+    font-size: 1rem;
+    line-height: 1.5; /* Standard line height */
+    color: #555; /* Common input text color */
+    background-color: #fff;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out; /* Smooth transition */
+}
+
+.uk-input:focus,
+input.uk-input[type="text"]:focus,
+textarea.uk-textarea:focus,
+select.uk-select:focus {
+    border-color: #66afe9; /* Common focus blue color */
+    outline: 0;
+    box-shadow: inset 0 1px 1px rgba(0,0,0,.075), 0 0 8px rgba(102,175,233,.6); /* Focus shadow effect */
+}
+
+/* Readonly inputs */
+.uk-input[readonly] {
+    background-color: #f5f5f5; /* Lighter background for readonly */
+    opacity: 1; /* Ensure text is readable */
+    cursor: not-allowed;
+}
+
+
+/* Stacked form structure */
+/* .uk-form-stacked typically implies that child .uk-margin elements will have bottom margin.
+   Since .uk-margin already has margin-bottom: 20px, this might be sufficient.
+   If specific adjustments for items within uk-form-stacked are needed, they can be added.
+   For example, to ensure direct children that are form groups get consistent spacing:
+*/
+.uk-form-stacked > .uk-margin { /* Target .uk-margin direct children of .uk-form-stacked */
+    margin-bottom: 15px; /* Slightly less margin for stacked form groups */
+}
+.uk-form-stacked > .uk-margin:last-child {
+    margin-bottom: 0; /* No margin for the last group in a stacked form */
+}
+.uk-form-controls {
+    /* This class itself in UI Kit often doesn't add much margin,
+       it's the container for inputs/selects etc. Spacing is usually
+       handled by .uk-margin on the parent of label + controls.
+    */
+}
+
+
+/* Heading styles based on UI Kit */
+.uk-heading-xlarge {
+    font-size: 3rem; /* Example size, adjust based on actual UI Kit */
+    line-height: 1.2;
+    font-weight: 300; /* UI Kit headings are often lighter */
+    color: #333;
+    /* margin-bottom: 20px; /* Default from .uk-margin or h1-h6 */
+}
+
+/* Divider Icon styles based on UI Kit */
+/* This is a simplified version. UI Kit's divider icon can be more complex. */
+.uk-divider-icon {
+    position: relative;
+    height: 1px; /* The line itself */
+    margin-top: 30px; /* Space above */
+    margin-bottom: 30px; /* Space below */
+    background-color: #e5e5e5; /* Color of the line */
+}
+
+.uk-divider-icon::before { /* The icon part */
+    content: "";
+    display: block;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 20px; /* Width of the icon space */
+    height: 20px; /* Height of the icon space */
+    border-radius: 50%; /* Make it circular */
+    background-color: #fff; /* Background of the icon, to sit on top of the line */
+    border: 1px solid #e5e5e5; /* Border for the icon */
+    /* For an actual SVG icon, you'd use background-image here */
+}
+
+
+/* Dialog basic styling (native dialog element) */
 dialog {
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  padding: 20px;
-  background-color: #fff;
-  /* Basic centering - can be improved */
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 1000; /* Ensure it's above other content */
+    background: #fff;
+    color: #333;
+    border: 1px solid rgba(0,0,0,0.2); /* Softer border */
+    border-radius: 6px; /* Slightly more rounded */
+    padding: 25px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2); /* More pronounced shadow */
+    width: 500px; /* Default width, can be overridden */
+    max-width: 90vw; /* Ensure it's responsive */
 }
 
 dialog::backdrop {
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.6); /* Darker backdrop */
 }
 
-/* Responsive considerations */
-@media (max-width: 768px) {
-  .container {
-    padding-left: 10px;
-    padding-right: 10px;
-  }
-
-  .navbar {
-    flex-direction: column;
-    min-height: auto;
-  }
-
-  .navbar-left, .navbar-right {
-    width: 100%;
-    justify-content: center;
-    padding: 10px 0;
-  }
-
-  .heading-xlarge {
-    font-size: 2rem;
-  }
-
-  .button {
-    width: 100%; /* Make buttons full width on smaller screens */
-    margin-bottom: 10px;
-  }
-  .navbar-right .button { /* More specific selector for navbar buttons */
-    width: auto; /* Revert navbar buttons to auto width */
+/* Styling for elements often found in dialogs */
+dialog .uk-form-label { /* Labels inside dialogs */
+    /* Add specific styles if needed, e.g., smaller font or different margin */
+}
+dialog .uk-input { /* Inputs inside dialogs */
+    /* Add specific styles if needed */
+}
+dialog .uk-margin { /* Margins inside dialogs */
+    margin-bottom: 15px;
+}
+dialog .uk-margin:last-child {
     margin-bottom: 0;
-  }
 }
 
-/* Spinner styles */
-.spinner {
-  border: 4px solid rgba(0, 0, 0, 0.1);
-  width: 36px; /* Corresponds to ratio: 0.75 with a base of 48px, if that was the UIkit default size */
-  height: 36px;
-  border-radius: 50%;
-  border-left-color: #09f;
-  animation: spin 1s ease infinite;
-  display: inline-block; /* To behave like a span and allow text/buttons next to it if needed */
+/* Utility classes based on UI Kit */
+
+/* Margin utilities */
+/* .uk-margin is already defined with margin-bottom: 20px (from basic styles) */
+/* More specific margin utilities */
+.uk-margin-small-bottom { margin-bottom: 10px !important; }
+.uk-margin-medium-bottom { margin-bottom: 30px !important; }
+.uk-margin-large-bottom { margin-bottom: 40px !important; }
+
+.uk-margin-small-top { margin-top: 10px !important; }
+.uk-margin-medium-top { margin-top: 30px !important; }
+.uk-margin-large-top { margin-top: 40px !important; }
+
+.uk-margin-small-left { margin-left: 10px !important; }
+.uk-margin-medium-left { margin-left: 30px !important; } /* Assuming 30px for medium example */
+.uk-margin-large-left { margin-left: 40px !important; }
+
+.uk-margin-small-right { margin-right: 10px !important; }
+.uk-margin-medium-right { margin-right: 30px !important; }
+.uk-margin-large-right { margin-right: 40px !important; }
+
+/* Text utilities */
+.uk-text-center {
+    text-align: center !important;
 }
 
-@keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+.uk-text-capitalize {
+    text-transform: capitalize !important;
 }
 
-/* Close icon styles */
-.close-icon {
-  font-size: 1.5rem; /* Make it larger and easier to click */
-  font-weight: bold;
-  line-height: 1;
-  color: #000;
-  text-shadow: 0 1px 0 #fff;
-  opacity: 0.5;
-  text-decoration: none;
+.uk-text-left {
+    text-align: left !important;
 }
 
-.close-icon:hover {
-  opacity: 0.8;
-  color: #000; /* Ensure color remains on hover */
-  text-decoration: none; /* Ensure no underline on hover */
+.uk-text-right {
+    text-align: right !important;
 }
 
-/* Utility Classes */
-.margin {
-  margin-bottom: 20px; /* Default margin, adjust as needed per element if UIkit had context */
+/* Width utilities */
+.uk-width-1-1 { /* Equivalent to width: 100% */
+    width: 100% !important;
+    box-sizing: border-box; /* Ensure padding/border don't expand it beyond 100% of parent */
+}
+/* Add other common fractions if observed in the HTML or generally useful */
+.uk-width-1-2 { width: 50% !important; box-sizing: border-box; }
+.uk-width-auto { width: auto !important; }
+
+
+/* Flex utilities */
+.uk-flex {
+    display: flex !important;
 }
 
-.width-1-1 {
-  width: 100% !important; /* uk-width-1-1 often implies important */
+.uk-flex-wrap {
+    flex-wrap: wrap !important;
 }
 
-.text-capitalize {
-  text-transform: capitalize;
+/* As discussed, if uk-flex-wrap-around is used in HTML with uk-flex and uk-flex-wrap,
+   it likely implies justify-content: space-around for the main axis.
+*/
+.uk-flex-wrap-around { /* This class in UI Kit usually means justify-content: space-around along with flex-wrap: wrap */
+    justify-content: space-around !important;
+}
+/* More explicit flex utility classes */
+.uk-flex-row { flex-direction: row !important; }
+.uk-flex-column { flex-direction: column !important; }
+
+.uk-flex-left { justify-content: flex-start !important; }
+.uk-flex-center { justify-content: center !important; } /* For main axis alignment */
+.uk-flex-right { justify-content: flex-end !important; }
+.uk-flex-between { justify-content: space-between !important; } /* alias for space-between */
+.uk-flex-around { justify-content: space-around !important; } /* alias for space-around */
+
+.uk-flex-top { align-items: flex-start !important; }
+.uk-flex-middle { align-items: center !important; } /* For cross axis alignment */
+.uk-flex-bottom { align-items: flex-end !important; }
+.uk-flex-stretch { align-items: stretch !important; }
+
+
+/* Position utilities */
+.uk-position-relative { position: relative !important; }
+.uk-position-absolute { position: absolute !important; }
+.uk-position-fixed { position: fixed !important; }
+.uk-position-static { position: static !important; }
+
+
+.uk-position-top { top: 0 !important; }
+.uk-position-bottom { bottom: 0 !important; }
+.uk-position-left { left: 0 !important; }
+.uk-position-right { right: 0 !important; }
+
+.uk-position-top-left { top: 0 !important; left: 0 !important; }
+.uk-position-top-right { top: 0 !important; right: 0 !important; }
+.uk-position-top-center {
+    top: 0 !important;
+    left: 50% !important;
+    transform: translateX(-50%);
+}
+.uk-position-bottom-left { bottom: 0 !important; left: 0 !important; }
+.uk-position-bottom-right { bottom: 0 !important; right: 0 !important; }
+.uk-position-bottom-center {
+    bottom: 0 !important;
+    left: 50% !important;
+    transform: translateX(-50%);
+}
+.uk-position-center { /* Centers in parent if parent is relative/absolute */
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%);
 }
 
-.text-center {
-  text-align: center !important;
+
+/* Display utilities (very basic, UI Kit has more responsive versions) */
+.uk-hidden { display: none !important; }
+/* .uk-visible would need more context, e.g. uk-visible@s for responsive display */
+
+/* Custom Spinner based on uk-spinner */
+.custom-spinner {
+    box-sizing: border-box;
+    width: 22px; /* uk-spinner with ratio:0.75 is roughly this size (assuming base of ~30px) */
+    height: 22px;
+    border-radius: 50%;
+    border: 2px solid #e5e5e5; /* Spinner track color */
+    border-top-color: #1e87f0; /* Spinner moving part color (UI Kit primary) */
+    animation: custom-spinner-spin 0.6s linear infinite; /* Animation speed */
+    display: inline-block; /* To fit inside a button or text flow */
+    vertical-align: middle; /* Align with text if used inline */
 }
 
-.container-expand {
-  padding-left: 0; /* Assuming expand means removing padding if container normally has it */
-  padding-right: 0;
-  max-width: none; /* Allow it to expand beyond the standard container width */
+@keyframes custom-spinner-spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
 }
 
-/* Additional button styles if needed */
-.button-large { /* Already covered by .button's padding and font-size but can be explicit */
-  /* padding: 10px 20px; */ /* from .button */
-  /* font-size: 1.25rem; */ /* from .button */
+/* Custom Close Icon based on uk-icon="close" */
+.custom-close-icon {
+    /* Applied to <a> tag */
+    display: inline-block;
+    font-size: 1.8rem; /* Make it a bit larger for better visibility/clickability */
+    line-height: 1; 
+    color: #999;
+    text-decoration: none;
+    font-weight: bold; /* Typically close icons are bold */
+    /* padding: 5px; /* Add padding if the clickable area needs to be larger than the icon itself */
 }
 
-.button-default { /* Base .button style is the default */
-  /* background-color: #fff; */ /* from .button */
-  /* color: #333; */ /* from .button */
-  /* border: 1px solid #e5e5e5; */ /* from .button */
-}
-
-.button-small {
-  font-size: 0.875rem; /* from .button-secondary, making it a general small button */
-  padding: 5px 10px; /* from .button-secondary, making it a general small button */
+.custom-close-icon:hover,
+.custom-close-icon:focus {
+    color: #555; /* Darken on hover/focus */
+    text-decoration: none;
+    outline: none;
 }

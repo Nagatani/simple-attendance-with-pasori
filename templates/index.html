@@ -7,77 +7,81 @@
     <title>出席登録 {{ section_title }} - 第{{ section_id }}回</title>
 
     <!-- UIkit CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.21.13/dist/css/uikit.min.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='custom.css') }}">
 
     <!-- UIkit JS -->
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.21.13/dist/js/uikit.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.21.13/dist/js/uikit-icons.min.js"></script>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='custom.css') }}">
+
     <script src="{{ url_for('static', filename='felica.js') }}" defer></script>
     <script src="{{ url_for('static', filename='append.js') }}" defer></script>
   </head>
   <body>
-    <div class="navbar-container margin">
-      <div class="container">
-        <div class="navbar">
-          <div class="navbar-left">
-            <span class="navbar-item logo">{{ section_title }} - 第{{ section_id }}回 出席登録</span>
+    <div class="uk-navbar-container uk-margin">
+      <div class="uk-container">
+        <div class="uk-navbar">
+          <div class="uk-navbar-left">
+            <span class="uk-navbar-item uk-logo">{{ section_title }} - 第{{ section_id }}回 出席登録</span>
           </div>
-          <div class="navbar-right">
-            <button id="start" class="button button-large button-default width-1-1 text-capitalize">SETUP</button>
-            <div id="waiting" class="margin" style="display: none;">
-              <button class="button button-large button-default width-1-1" disabled>
-                <div class="spinner"></div>
+          <div class="uk-navbar-right">
+            <button id="start" class="uk-button uk-button-large uk-button-default uk-width-1-1 uk-text-capitalize">SETUP</button>
+            <div id="waiting" class="uk-margin" style="display: none;">
+              <button class="uk-button uk-button-large uk-button-default uk-width-1-1" disabled>
+                <div class="custom-spinner"></div>
               </button>
             </div>
-            <div id="idm" class="alert alert-success text-center" style="display: none;"></div>
+            <div id="idm" class="uk-alert uk-alert-success uk-text-center" uk-alert style="display: none;"></div>
         </div>
         </div>
       </div>
     </div>
-    <div class="container container-expand">
-      <h1 id="hedding1" class="heading-xlarge text-center"></h1>
-      <hr class="divider-icon">
-      <div id="attendedList" style="gap: 8px; text-transform: none !important" class="flex-container">
+    <div class="uk-container uk-container-expand">
+      <h1 id="hedding1" class="uk-heading-xlarge uk-text-center"></h1>
+      <hr class="uk-divider-icon">
+      <div id="attendedList" style="gap: 8px; text-transform: none !important" class="uk-flex uk-flex-wrap uk-flex-wrap-around">
       </div>
      
     </div>
-    <div class="position-bottom" style="position: fixed !important;">
-      <button href="#" class="button button-secondary button-small" id="forgotCard">カード忘れ登録</button>
+    <div class="uk-position-bottom" style="position: fixed !important;">
+      <button href="#" class="uk-button uk-button-secondary uk-button-small" id="forgotCard">カード忘れ登録</button>
     </div>
 
     <dialog id="favDialog">
-      <div class="position-top-left">
-        <a href="#" class="close-icon" onclick="document.getElementById('favDialog').close(); return false;">&times;</a>
+      <div class="uk-position-top-left">
+        <a href="#" class="custom-close-icon" onclick="document.getElementById('favDialog').close(); return false;">&times;</a>
       </div>
-      <form class="margin form-stacked" id="register-form">
-        <div class="margin" id="dialogMessage">
+      <form class="uk-margin uk-form-stacked" id="register-form">
+        <div class="uk-margin" id="dialogMessage">
           学籍番号を入力してEnterKeyを押下してください。
         </div>
-        <div class="margin">
-          <label class="form-label" for="input_idm">Card ID:</label>
-          <div class="form-controls">
-            <input class="input" id="input_idm" type="text" readonly>
+        <div class="uk-margin">
+          <label class="uk-form-label" for="input_idm">Card ID:</label>
+          <div class="uk-form-controls">
+            <input class="uk-input" id="input_idm" type="text" readonly>
           </div>
         </div>
-        <div class="margin">
-          <label class="form-label" for="input_student_id">Student ID:</label>
-          <div class="form-controls">
-            <input class="input" id="input_student_id" type="text" placeholder="学籍番号を入力する">
+        <div class="uk-margin">
+          <label class="uk-form-label" for="input_student_id">Student ID:</label>
+          <div class="uk-form-controls">
+            <input class="uk-input" id="input_student_id" type="text" placeholder="学籍番号を入力する">
           </div>
         </div>
       </form>
     </dialog>
     <dialog id="forgotCardDialog">
-      <div class="position-top-left">
-        <a href="#" class="close-icon" onclick="document.getElementById('forgotCardDialog').close(); return false;">&times;</a>
+      <div class="uk-position-top-left">
+        <a href="#" class="custom-close-icon" onclick="document.getElementById('forgotCardDialog').close(); return false;">&times;</a>
       </div>
-      <form class="margin form-stacked" id="register-form">
-        <div class="margin" id="forgotCardDialogMessage">
+      <form class="uk-margin uk-form-stacked" id="register-form">
+        <div class="uk-margin" id="forgotCardDialogMessage">
           学籍番号を入力してEnterKeyを押下してください。
         </div>
-        <div class="margin">
-          <label class="form-label" for="input_forgot_student_id">Student ID:</label>
-          <div class="form-controls">
-            <input class="input" id="input_forgot_student_id" type="text" placeholder="学籍番号を入力する">
+        <div class="uk-margin">
+          <label class="uk-form-label" for="input_forgot_student_id">Student ID:</label>
+          <div class="uk-form-controls">
+            <input class="uk-input" id="input_forgot_student_id" type="text" placeholder="学籍番号を入力する">
           </div>
         </div>
       </form>
