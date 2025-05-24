@@ -22,16 +22,41 @@ let deviceEp = {
 }
 
 let seqNumber = 0
+let onCardReadCallback = null; // カード読み取り時のコールバック関数を保持する変数
 
-const startButton = document.getElementById('start')
-const idmMessage = document.getElementById('idm')
-const waitingMessage = document.getElementById('waiting')
+// DOM要素の直接操作を削除 (ui.jsの関数を経由する)
+// const startButton = document.getElementById('start')
+// const idmMessage = document.getElementById('idm')
+// const waitingMessage = document.getElementById('waiting')
 
+/**
+ * 指定された桁数になるように数値の前に0を追加します。
+ * @param {number|string} num 対象の数値または文字列
+ * @param {number} p 桁数
+ * @returns {string} ゼロパディングされた文字列
+ */
 const padding_zero = (num, p) => ("0".repeat(p * 1) + num).slice(-(p * 1))
+
+/**
+ * 10進数を16進数文字列に変換します。
+ * @param {number} n 10進数
+ * @returns {string} 16進数文字列
+ */
 const dec2HexString = (n) => padding_zero((n * 1).toString(16), 2)
 
+/**
+ * 指定された時間（ミリ秒）だけ処理を待機します。
+ * @param {number} msec 待機する時間（ミリ秒）
+ * @returns {Promise<void>}
+ */
 const sleep = (msec) => new Promise((resolve) => setTimeout(resolve, msec))
 
+/**
+ * RC-S380デバイスにデータを送信します。
+ * @param {USBDevice} device USBデバイスオブジェクト
+ * @param {number[]} data 送信するデータの配列
+ * @returns {Promise<void>}
+ */
 let send = async (device, data) => {
   let uint8a = new Uint8Array(data)
   // console.log(">>>>>>>>>>")
@@ -40,6 +65,12 @@ let send = async (device, data) => {
   await sleep(50)
 }
 
+/**
+ * RC-S380デバイスからデータを受信します。
+ * @param {USBDevice} device USBデバイスオブジェクト
+ * @param {number} len 受信するデータの長さ
+ * @returns {Promise<number[]>} 受信したデータの配列
+ */
 const receive = async (device, len) => {
   // console.log("<<<<<<<<<<" + len);
   const data = await device.transferIn(deviceEp.in, len)
@@ -51,6 +82,12 @@ const receive = async (device, len) => {
   return arr
 }
 
+/**
+ * RC-S300デバイスにデータを送信します。
+ * @param {USBDevice} device USBデバイスオブジェクト
+ * @param {number[]} data 送信するデータの配列
+ * @returns {Promise<void>}
+ */
 const send300 = async (device, data) => {
   let argData = new Uint8Array(data)
   const dataLen = argData.length
@@ -72,6 +109,12 @@ const send300 = async (device, data) => {
   await sleep(50)
 }
 
+/**
+ * RC-S380デバイスとのセッションを処理します。
+ * デバイスの初期化、カードのポーリング、IDmの取得を行います。
+ * @param {USBDevice} device USBデバイスオブジェクト
+ * @returns {Promise<void>}
+ */
 let session = async (device) => {
   // INFO:nfc.clf:searching for reader on path usb:054c:06c3
   // DEBUG:nfc.clf.transport:using libusb-1.0.21
@@ -158,10 +201,11 @@ let session = async (device) => {
   let idm = (await receive(device, 37)).slice(17, 25)
   if (idm.length > 0) {
     const idmStr = idm.map(v => dec2HexString(v)).join('')
-    idmMessage.innerText = "Felica ID: " + idmStr
+    // idmMessage.innerText = "Felica ID: " + idmStr; // ui.js経由で表示
+    displayFelicaMessage("Felica ID: " + idmStr, false);
     updateIDm(idmStr) // ここでIDを送信する( customize: ADD Code )
-    idmMessage.style.display = 'block'
-    waitingMessage.style.display = 'none'
+    // idmMessage.style.display = 'block'; // ui.js経由で表示
+    // waitingMessage.style.display = 'none'; // ui.js経由で表示
     return
   }
 
@@ -221,16 +265,24 @@ let session = async (device) => {
   if (idt.length > 2) {
     const id = idt.map(v => dec2HexString(v))
     const idtStr = id.join('')
-    idmMessage.innerText = "MIFARE ID: " + idtStr
+    // idmMessage.innerText = "MIFARE ID: " + idtStr; // ui.js経由で表示
+    displayFelicaMessage("MIFARE ID: " + idtStr, false);
     updateIDm(idtStr) // ここでIDを送信する( customize: ADD Code )
-    idmMessage.style.display = 'block'
-    waitingMessage.style.display = 'none'
+    // idmMessage.style.display = 'block'; // ui.js経由で表示
+    // waitingMessage.style.display = 'none'; // ui.js経由で表示
     return
   }
-  idmMessage.style.display = 'none'
-  waitingMessage.style.display = 'block'
+  // idmMessage.style.display = 'none'; // ui.js経由で表示
+  // waitingMessage.style.display = 'block'; // ui.js経由で表示
+  displayFelicaMessage("", true); // IDなし、待機状態を表示
 }
 
+/**
+ * RC-S300デバイスとのセッションを処理します。
+ * デバイスの初期化、カードのポーリング、IDm/カードUIDの取得を行います。
+ * @param {USBDevice} device USBデバイスオブジェクト
+ * @returns {Promise<void>}
+ */
 const session300 = async (device) => {
   // let rcs300_com_length = 0
   const len = 50
@@ -277,10 +329,11 @@ const session300 = async (device) => {
   if (poling_res_f.length == 46) {
     const idm = poling_res_f.slice(26, 34).map(v => dec2HexString(v))
     const idmStr = idm.join('')
-    idmMessage.innerText = "Felica IDm: " + idmStr
+    // idmMessage.innerText = "Felica IDm: " + idmStr; // ui.js経由で表示
+    displayFelicaMessage("Felica IDm: " + idmStr, false);
     updateIDm(idmStr) // ここでIDを送信する( customize: ADD Code )
-    idmMessage.style.display = 'block'
-    waitingMessage.style.display = 'none'
+    // idmMessage.style.display = 'block'; // ui.js経由で表示
+    // waitingMessage.style.display = 'none'; // ui.js経由で表示
     return
   }
   // SwitchProtocolTypeA
@@ -302,18 +355,27 @@ const session300 = async (device) => {
   if (poling_res_a.length == 16) {
     const id = poling_res_a.slice(10, 14).map(v => dec2HexString(v))
     const idStr = id.join('')
-    idmMessage.innerText = "Card Type : MIFARE ID: " + idStr
+    // idmMessage.innerText = "Card Type : MIFARE ID: " + idStr; // ui.js経由で表示
+    displayFelicaMessage("Card Type : MIFARE ID: " + idStr, false);
     updateIDm(idStr) // ここでIDを送信する( customize: ADD Code )
-    idmMessage.style.display = 'block'
-    waitingMessage.style.display = 'none'
+    // idmMessage.style.display = 'block'; // ui.js経由で表示
+    // waitingMessage.style.display = 'none'; // ui.js経由で表示
     return
   }
 
-  idmMessage.style.display = 'none'
-  waitingMessage.style.display = 'block'
+  // idmMessage.style.display = 'none'; // ui.js経由で表示
+  // waitingMessage.style.display = 'block'; // ui.js経由で表示
+  displayFelicaMessage("", true); // IDなし、待機状態を表示
 }
 
-startButton.addEventListener('click', async () => {
+/**
+ * スタートボタンのクリックイベントリスナー。
+ * USBデバイスへの接続、設定、インターフェースの要求、およびポーリングループの開始を行います。
+ * エラーが発生した場合は、エラーメッセージを表示し、デバイスを閉じます。
+ */
+// startButtonのイベントリスナーは、ui.js側ではなく、こちらに残す。
+// ただし、ボタンやメッセージの表示/非表示はui.jsの関数を呼び出す。
+document.getElementById('start').addEventListener('click', async () => {
   let device
   try {
     console.log(navigator)
@@ -349,8 +411,9 @@ startButton.addEventListener('click', async () => {
       in: interface.alternate.endpoints.filter(e => e.direction == 'in')[0].endpointNumber,
       out: interface.alternate.endpoints.filter(e => e.direction == 'out')[0].endpointNumber,
     }
-    startButton.style.display = 'none'
-    waitingMessage.style.display = 'block'
+    // startButton.style.display = 'none'; // ui.js経由で操作
+    // waitingMessage.style.display = 'block'; // ui.js経由で操作
+    hideStartButtonAndShowWaiting();
 
     while (true) {
       await session(device)
@@ -364,9 +427,10 @@ startButton.addEventListener('click', async () => {
     } catch (e) {
       console.log(e)
     }
-    startButton.style.display = 'block'
-    waitingMessage.style.display = 'none'
-    idmMessage.style.display = 'none'
+    // startButton.style.display = 'block'; // ui.js経由で操作
+    // waitingMessage.style.display = 'none'; // ui.js経由で操作
+    // idmMessage.style.display = 'none'; // ui.js経由で操作
+    showStartButtonAndHideMessages();
     throw e
   }
 })
@@ -375,24 +439,59 @@ startButton.addEventListener('click', async () => {
 let beforeIdm = ''
 
 /**
- * IDMの変更を検知し、出席登録処理を呼び出す
- * @param {Felica IDM} idm 
+ * IDMの変更を検知し、出席登録処理を呼び出します。
+ * FeliCaカードのIDMを引数に取り、読み取り音を再生し、
+ * ダイアログが開かれていない場合、かつIDMが8文字で前回と異なる場合に、
+ * inputIdm要素にIDMを設定し、attend関数を呼び出します。
+ * @param {string} idm FeliCaカードから読み取られたIDM
  */
 const updateIDm = (idm) => {
+  // const sound = document.getElementById('read_sound'); // ui.js経由で再生
+  // sound.currentTime = 0;
+  // sound.muted = false;
+  // sound.play();
+  playReadSound();
 
-  const sound = document.getElementById('read_sound')
-  sound.currentTime = 0
-  sound.muted = false
-  sound.play()
+  // favDialogのチェックはappend.jsの責務とするか、UI状態を管理するモジュールが必要
+  // ここでは単純化のため、dialogが開いているかのチェックは削除または移動を検討
+  // let favDialog = document.getElementById('favDialog');
+  // if (favDialog.open) return;
 
-  let favDialog = document.getElementById('favDialog')
-  if (favDialog.open) return
+  // inputIdmの取得と値のセットも append.js または ui.js 経由で行うべき
+  // ここではappend.js側のグローバル変数 `inputIdm` を直接参照している前提で残すが、
+  // 本来は `uiSetIdmValue(idm)` のような関数呼び出しが望ましい
+  const globalInputIdm = document.getElementById('input_idm'); // append.jsで定義されている想定
+  const favDialog = document.getElementById('favDialog'); // append.jsで定義されている想定
 
-  if (inputIdm && idm.length === 8 && idm !== beforeIdm) { // 文字長さのチェックをここで入れているが、動作状況を見て必要なら外す
-    inputIdm.value = idm
-    beforeIdm = inputIdm.value
-    // inputIdm.value = ""
-    console.log("IDm updated.")
-    attend(idm)
+  if (favDialog && favDialog.open) return; // favDialogが開いていたら何もしない
+
+  // idm.length === 8 のチェックはFeliCa IDmを想定。MIFAREなどは異なる場合がある。
+  // ここでは既存ロジックを踏襲。
+  // inputIdm は append.js で宣言されたグローバル変数。
+  // clearIdmInput() は ui.js にあるが、ここでは append.js の inputIdm を直接参照。
+  // 本来は felica.js は inputIdm を直接操作せず、コールバックなどで append.js に通知すべき。
+  if (globalInputIdm && idm !== beforeIdm) {
+    // globalInputIdm.value = idm; // IDmのセットはコールバック側に任せる
+    beforeIdm = idm; // 前回のIDmを更新
+    console.log("IDm updated in felica.js, new IDm:", idm);
+    // attend(idm); // append.js の attend 関数を呼び出す -> コールバック経由に変更
+    if (onCardReadCallback) {
+      onCardReadCallback(idm);
+    } else {
+      console.warn("onCardReadCallback is not set in felica.js");
+    }
   }
 }
+
+/**
+ * カード読み取り時に呼び出されるコールバック関数を登録します。
+ * @param {function(string): void} callback カードから読み取られたIDmを引数として受け取る関数。
+ */
+const setCardReadCallback = (callback) => {
+  if (typeof callback === 'function') {
+    onCardReadCallback = callback;
+    console.log("Card read callback has been set.");
+  } else {
+    console.error("Failed to set card read callback. Provided argument is not a function.");
+  }
+};
