@@ -35,7 +35,7 @@ async function fetchApi(endpoint, method = 'POST', bodyParams = null) {
       // dataオブジェクトにエラーメッセージが含まれていることを期待
       // なければ一般的なエラーメッセージ
       const errorMessage = data?.message || `HTTP error! status: ${response.status}`;
-      console.error(`API error for endpoint ${endpoint}:`, data);
+      console.error(`APIエラー発生 (${response.status}) エンドポイント: ${endpoint}`, data);
       // エラーオブジェクトにレスポンスデータを含めることで、呼び出し元で詳細なエラー情報を利用できるようにする
       const error = new Error(errorMessage);
       error.data = data; // エラーオブジェクトにAPIからのレスポンスデータを添付
@@ -45,7 +45,7 @@ async function fetchApi(endpoint, method = 'POST', bodyParams = null) {
     return data;
   } catch (error) {
     // ネットワークエラーや上記でthrowされたエラーをキャッチ
-    console.error(`Fetch API failed for endpoint ${endpoint}:`, error);
+    console.error(`フェッチAPI失敗 エンドポイント: ${endpoint}`, error);
     // エラーを再throwして、呼び出し元で処理できるようにする
     throw error;
   }
@@ -61,12 +61,12 @@ async function fetchApi(endpoint, method = 'POST', bodyParams = null) {
  */
 const callAttendApi = async (card_id) => {
   try {
-    console.log('API call /attend with card_id:', card_id); // formDataログの代わり
+    console.info(`API呼び出し: /attend, パラメータ: ${JSON.stringify({ card_id })}`);
     return await fetchApi('/attend', 'POST', { card_id });
   } catch (error) {
     // エラーログはfetchApi内で出力されるので、ここでは再throwするか、
     // UI固有のエラー処理が必要ならここで行う（今回は再throwでOK）
-    console.error('callAttendApi failed:', error.message, error.data || '');
+    // console.error('callAttendApi failed:', error.message, error.data || ''); // 削除
     throw error;
   }
 };
@@ -80,10 +80,10 @@ const callAttendApi = async (card_id) => {
  */
 const callRegisterApi = async (card_id, student_id) => {
   try {
-    console.log('API call /register with card_id:', card_id, 'student_id:', student_id); // formDataログの代わり
+    console.info(`API呼び出し: /register, パラメータ: ${JSON.stringify({ card_id, student_id })}`);
     return await fetchApi('/register', 'POST', { card_id, student_id });
   } catch (error) {
-    console.error('callRegisterApi failed:', error.message, error.data || '');
+    // console.error('callRegisterApi failed:', error.message, error.data || ''); // 削除
     throw error;
   }
 };
@@ -95,10 +95,10 @@ const callRegisterApi = async (card_id, student_id) => {
  */
 const callGetAttendedApi = async () => {
   try {
-    console.log('API call /get-attended');
+    console.info('API呼び出し: /get-attended, パラメータ: (なし)');
     return await fetchApi('/get-attended', 'GET');
   } catch (error) {
-    console.error('callGetAttendedApi failed:', error.message, error.data || '');
+    // console.error('callGetAttendedApi failed:', error.message, error.data || ''); // 削除
     throw error;
   }
 };
@@ -111,10 +111,10 @@ const callGetAttendedApi = async () => {
  */
 const callForgotCardApi = async (student_id) => {
   try {
-    console.log('API call /forgot_card with student_id:', student_id); // formDataログの代わり
+    console.info(`API呼び出し: /forgot_card, パラメータ: ${JSON.stringify({ student_id })}`);
     return await fetchApi('/forgot_card', 'POST', { student_id });
   } catch (error) {
-    console.error('callForgotCardApi failed:', error.message, error.data || '');
+    // console.error('callForgotCardApi failed:', error.message, error.data || ''); // 削除
     throw error;
   }
 };
