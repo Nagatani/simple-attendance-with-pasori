@@ -59,8 +59,6 @@ const sleep = (msec) => new Promise((resolve) => setTimeout(resolve, msec))
  */
 let send = async (device, data) => {
   let uint8a = new Uint8Array(data)
-  // console.log(">>>>>>>>>>")
-  // console.log(uint8a)
   await device.transferOut(deviceEp.out, uint8a)
   await sleep(50)
 }
@@ -77,8 +75,7 @@ const receive = async (device, len) => {
   await sleep(10)
 
   const arr = Array.from(new Uint8Array(data.data.buffer))
-  const arr_str = arr.map((v) => dec2HexString(v))
-  console.log(arr_str)
+  // const arr_str = arr.map((v) => dec2HexString(v)) // console.log(arr_str) は削除
   return arr
 }
 
@@ -103,8 +100,6 @@ const send300 = async (device, data) => {
   uint8a[6] = ++seqNumber         // 認識番号
 
   0 != dataLen && uint8a.set(argData, 10) // コマンド追加
-  // console.log(">>>>>>>>>>")
-  // console.log(Array.from(uint8a).map(v => v.toString(16)))
   await device.transferOut(deviceEp.out, uint8a)
   await sleep(50)
 }
@@ -378,7 +373,8 @@ const session300 = async (device) => {
 document.getElementById('start').addEventListener('click', async () => {
   let device
   try {
-    console.log(navigator)
+    console.info('WebUSBデバイスの選択/取得処理を開始します...');
+    // console.log(navigator) // 削除
     // ペアリング済みの対応デバイスが1つだったら、自動選択にする
     let pearedDevices = await navigator.usb.getDevices()
     pearedDevices = pearedDevices.filter(d => deviceFilters.map(p => p.productId).includes(d.productId))
@@ -392,21 +388,23 @@ document.getElementById('start').addEventListener('click', async () => {
       session = session300
     }
 
-    console.log("open")
+    // console.log("open") // 削除
     await device.open()
-    console.log(device)
+    console.info(`WebUSBデバイス オープン成功: ${device.productName}`);
+    // console.log(device) // 削除
   } catch (e) {
-    console.log(e)
+    console.error(`WebUSBデバイス初期化エラー: ${e.message}`, e);
     alert(e)
     throw e
   }
   try {
-    console.log("selectConfiguration")
+    // console.log("selectConfiguration") // 削除
     await device.selectConfiguration(1)
-    console.log("claimInterface")
-    console.log(device)
+    // console.log("claimInterface") // 削除
+    // console.log(device) // 削除
     const interface = device.configuration.interfaces.filter(v => v.alternate.interfaceClass == 255)[0]
     await device.claimInterface(interface.interfaceNumber)
+    console.info('インターフェース要求成功。ポーリングを開始します...');
     deviceEp = {
       in: interface.alternate.endpoints.filter(e => e.direction == 'in')[0].endpointNumber,
       out: interface.alternate.endpoints.filter(e => e.direction == 'out')[0].endpointNumber,
@@ -425,7 +423,7 @@ document.getElementById('start').addEventListener('click', async () => {
     try {
       device.close()
     } catch (e) {
-      console.log(e)
+      console.error(`WebUSBデバイスクローズ時エラー: ${e.message}`, e);
     }
     // startButton.style.display = 'block'; // ui.js経由で操作
     // waitingMessage.style.display = 'none'; // ui.js経由で操作
@@ -473,12 +471,13 @@ const updateIDm = (idm) => {
   if (globalInputIdm && idm !== beforeIdm) {
     // globalInputIdm.value = idm; // IDmのセットはコールバック側に任せる
     beforeIdm = idm; // 前回のIDmを更新
-    console.log("IDm updated in felica.js, new IDm:", idm);
+    // console.log("IDm updated in felica.js, new IDm:", idm); // 削除
     // attend(idm); // append.js の attend 関数を呼び出す -> コールバック経由に変更
     if (onCardReadCallback) {
+      console.info(`カードを検出しました。IDM: ${idm}`);
       onCardReadCallback(idm);
     } else {
-      console.warn("onCardReadCallback is not set in felica.js");
+      console.warn('カード読み取りコールバック (onCardReadCallback) が設定されていません。');
     }
   }
 }
@@ -490,9 +489,9 @@ const updateIDm = (idm) => {
 const setCardReadCallback = (callback) => {
   if (typeof callback === 'function') {
     onCardReadCallback = callback;
-    console.log("Card read callback has been set.");
+    // console.log("Card read callback has been set."); // 削除
   } else {
-    console.error("Failed to set card read callback. Provided argument is not a function.");
+    console.error('カード読み取りコールバックの設定失敗。引数が関数ではありません。');
   }
 };
 
@@ -502,5 +501,5 @@ const setCardReadCallback = (callback) => {
  */
 function clearBeforeIdm() {
   beforeIdm = '';
-  console.log('beforeIdm has been cleared.');
+  // console.log('beforeIdm has been cleared.'); // 削除
 }

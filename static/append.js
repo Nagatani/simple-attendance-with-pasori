@@ -16,8 +16,9 @@ let inputIdm = document.getElementById('input_idm');
  const attend = (card_id) => {
   callAttendApi(card_id)
     .then(data => {
-      console.log('attend API success:', data);
+      // console.log('attend API success:', data); // 削除
       if (data.status === 'error') {
+        console.info(`未登録カードです。IDM: "${card_id}"。登録ダイアログを表示します。`);
         showRegisterErrorDialogAndFocus(); // 未登録カードの場合、登録ダイアログ表示
       } else {
         processNewAttend(data.student_id, true); // 登録済みの場合、出席表示
@@ -40,13 +41,13 @@ let inputIdm = document.getElementById('input_idm');
 const register = (card_id, student_id) => {
   callRegisterApi(card_id, student_id)
     .then(data => {
-      console.log('register API success:', data);
+      // console.log('register API success:', data); // 削除
       if (data.status === 'error') {
         focusStudentIdInRegisterDialog(); // おそらくエラーメッセージはサーバーから返る想定
                                           // 必要であれば ui.js に data.message を渡して表示
         if (data.message) {
             // 例: showErrorInRegisterDialog(data.message); のような関数をui.jsに作る
-            console.log("Register API error message:", data.message); // とりあえずコンソールに
+            // console.log("Register API error message:", data.message); // 削除
         }
       } else {
         closeRegisterDialogAndClearStudentId();
@@ -86,7 +87,7 @@ const showAllAttendance = () => {
   students = []; // students リストを初期化
   callGetAttendedApi()
     .then(data => {
-      console.log('getAttended API success:', data);
+      // console.log('getAttended API success:', data); // 削除
       attends = data; // サーバーからのデータを保持 (形式は [[timestamp, student_id], ...])
 
       clearAttendedListDisplay();
@@ -161,7 +162,7 @@ if (inputForgotStudntId) {
  const register_forgot = (student_id) => {
   callForgotCardApi(student_id)
     .then(data => {
-      console.log('forgotCard API success:', data);
+      // console.log('forgotCard API success:', data); // 削除
       if (data.status === 'error') {
         // UI操作を ui.js の関数経由で行う
         showForgotCardErrorMessageAndFocus(data.message);
@@ -187,11 +188,11 @@ showAllAttendance();
  * @param {string} idm FeliCaカードから読み取られたIDm
  */
 const handleCardRead = (idm) => {
-  console.log("handleCardRead called with IDm:", idm);
+  // console.log("handleCardRead called with IDm:", idm); // 削除
   if (inputIdm) {
     inputIdm.value = idm; // グローバルな inputIdm 要素に値を設定
   } else {
-    console.error("inputIdm element not found in handleCardRead.");
+    console.error('handleCardRead内でinputIdm要素が見つかりませんでした。');
     return;
   }
   
@@ -202,7 +203,7 @@ const handleCardRead = (idm) => {
   // ここでは、ダイアログが開いていない場合のみ attend を呼び出すようにする。
   const favDialog = document.getElementById('favDialog'); // ui.js で操作される要素だが、状態確認のために取得
   if (favDialog && favDialog.open) {
-    console.log("Registration dialog is open, skipping attend process for new card read.");
+    // console.log("Registration dialog is open, skipping attend process for new card read."); // 削除
     return;
   }
 
@@ -213,16 +214,17 @@ const handleCardRead = (idm) => {
 if (typeof setCardReadCallback === 'function') {
   setCardReadCallback(handleCardRead);
 } else {
-  console.error("setCardReadCallback is not defined in felica.js or not loaded yet.");
+  console.error('felica.jsのsetCardReadCallback関数が未定義か、まだ読み込まれていません。');
 }
 
 // 登録ダイアログが閉じられた際のイベントリスナー
 const favDialogElement = document.getElementById('favDialog');
 if (favDialogElement) {
   favDialogElement.addEventListener('close', () => {
-    console.log('Registration dialog (favDialog) closed.');
+    // console.log('Registration dialog (favDialog) closed.'); // 削除
     if (typeof clearBeforeIdm === 'function') {
       clearBeforeIdm(); // felica.jsの関数を呼び出す
+      console.info('登録ダイアログが閉じられました。FeliCaキャッシュ (beforeIdm) をクリアしました。');
     }
     // ダイアログが閉じたときに inputIdm の値をクリアする処理は
     // ui.js の closeRegisterDialogAndClearStudentId に集約されたのでここでは不要。
