@@ -1,103 +1,120 @@
+/**
+ * 汎用的なAPI呼び出し関数。
+ * fetchを使用してリクエストを送信し、JSONレスポンスを処理します。
+ * @param {string} endpoint APIのエンドポイントURL (例: '/attend')
+ * @param {string} [method='POST'] HTTPメソッド (例: 'GET', 'POST')
+ * @param {Object|null} [bodyParams=null] POSTリクエストの場合に送信するパラメータのオブジェクト。
+ *                                       このオブジェクトは関数内でFormDataに変換されます。
+ *                                       GETリクエストの場合はnullまたは未指定。
+ * @returns {Promise<Object>} APIからのレスポンスボディ（JSONオブジェクト）。
+ * @throws {Error} ネットワークエラーまたはAPIがエラーレスポンスを返した場合。
+ */
+async function fetchApi(endpoint, method = 'POST', bodyParams = null) {
+  const options = {
+    method: method.toUpperCase(),
+    headers: {
+      // 必要に応じて共通ヘッダーを追加 (例: 'X-Requested-With': 'XMLHttpRequest')
+    }
+  };
+
+  if (options.method === 'POST' && bodyParams) {
+    const formData = new FormData();
+    for (const key in bodyParams) {
+      if (Object.prototype.hasOwnProperty.call(bodyParams, key)) {
+        formData.append(key, bodyParams[key]);
+      }
+    }
+    options.body = formData;
+  }
+
+  try {
+    const response = await fetch(endpoint, options);
+    const data = await response.json(); // 先にjson()を試みる
+
+    if (!response.ok) {
+      // dataオブジェクトにエラーメッセージが含まれていることを期待
+      // なければ一般的なエラーメッセージ
+      const errorMessage = data?.message || `HTTP error! status: ${response.status}`;
+      console.error(`API error for endpoint ${endpoint}:`, data);
+      // エラーオブジェクトにレスポンスデータを含めることで、呼び出し元で詳細なエラー情報を利用できるようにする
+      const error = new Error(errorMessage);
+      error.data = data; // エラーオブジェクトにAPIからのレスポンスデータを添付
+      error.status = response.status;
+      throw error;
+    }
+    return data;
+  } catch (error) {
+    // ネットワークエラーや上記でthrowされたエラーをキャッチ
+    console.error(`Fetch API failed for endpoint ${endpoint}:`, error);
+    // エラーを再throwして、呼び出し元で処理できるようにする
+    throw error;
+  }
+}
+
 // サーバー通信(API呼び出し)関連の関数
 
 /**
- * サーバーにカードIDを送信し、出席を試みます。
- * @param {string} card_id 学生のカードID
- * @returns {Promise<object>} サーバーからのレスポンスJSONデータ、またはエラーを含むPromise
+ * 出席を登録するAPIを呼び出します。
+ * @param {string} card_id カードID
+ * @returns {Promise<Object>} APIからのレスポンスオブジェクト
+ * @throws {Error} API呼び出しに失敗した場合
  */
-const callAttendApi = (card_id) => {
-  let formData = new FormData();
-  formData.append('card_id', card_id);
-  console.log('API call /attend with formData:', formData);
-  
-  return fetch('/attend', {method: 'POST', body: formData}).then(response => {
-    return response.json().then(data => {
-      if (response.ok) {
-        console.log('API response /attend OK:', data);
-        return data; // dataには {status: 'success', student_id: 'xxx'} または {status: 'error', message: '...'} が入る想定
-      } else {
-        console.error('API response /attend Error:', data);
-        return Promise.reject(data); // エラー時もJSON形式のデータ {status: 'error', message: '...'} を想定
-      }
-    });
-  }).catch(error => {
-    console.error('Fetch error in callAttendApi:', error);
-    return Promise.reject(error); // ネットワークエラーなど
-  });
+const callAttendApi = async (card_id) => {
+  try {
+    console.log('API call /attend with card_id:', card_id); // formDataログの代わり
+    return await fetchApi('/attend', 'POST', { card_id });
+  } catch (error) {
+    // エラーログはfetchApi内で出力されるので、ここでは再throwするか、
+    // UI固有のエラー処理が必要ならここで行う（今回は再throwでOK）
+    console.error('callAttendApi failed:', error.message, error.data || '');
+    throw error;
+  }
 };
 
 /**
- * サーバーにカードIDと学籍番号を送信し、新規学生情報を登録します。
- * @param {string} card_id 学生のカードID
- * @param {string} student_id 学生の学籍番号
- * @returns {Promise<object>} サーバーからのレスポンスJSONデータ、またはエラーを含むPromise
+ * 新規学生を登録するAPIを呼び出します。
+ * @param {string} card_id カードID
+ * @param {string} student_id 学籍番号
+ * @returns {Promise<Object>} APIからのレスポンスオブジェクト
+ * @throws {Error} API呼び出しに失敗した場合
  */
-const callRegisterApi = (card_id, student_id) => {
-  let formData = new FormData();
-  formData.append('card_id', card_id);
-  formData.append('student_id', student_id);
-  console.log('API call /register with formData:', formData);
-
-  return fetch('/register', {method: 'POST', body: formData}).then(response => {
-    return response.json().then(data => {
-      if (response.ok) {
-        console.log('API response /register OK:', data);
-        return data; // dataには {status: 'success', student_id: 'xxx'} または {status: 'error', message: '...'} が入る想定
-      } else {
-        console.error('API response /register Error:', data);
-        return Promise.reject(data);
-      }
-    });
-  }).catch(error => {
-    console.error('Fetch error in callRegisterApi:', error);
-    return Promise.reject(error);
-  });
+const callRegisterApi = async (card_id, student_id) => {
+  try {
+    console.log('API call /register with card_id:', card_id, 'student_id:', student_id); // formDataログの代わり
+    return await fetchApi('/register', 'POST', { card_id, student_id });
+  } catch (error) {
+    console.error('callRegisterApi failed:', error.message, error.data || '');
+    throw error;
+  }
 };
 
 /**
- * サーバーから全ての出席情報を取得します。
- * @returns {Promise<Array<Array<string>>>} サーバーからのレスポンスJSONデータ (例: [["出席時刻", "学籍番号"], ...])、またはエラーを含むPromise
+ * 出席者リストを取得するAPIを呼び出します。
+ * @returns {Promise<Object>} APIからのレスポンスオブジェクト
+ * @throws {Error} API呼び出しに失敗した場合
  */
-const callGetAttendedApi = () => {
-  console.log('API call /get-attended');
-  return fetch('/get-attended').then(response => {
-    return response.json().then(data => {
-      if (response.ok) {
-        console.log('API response /get-attended OK:', data);
-        return data; // dataは出席情報の配列を想定
-      } else {
-        console.error('API response /get-attended Error:', data);
-        return Promise.reject(data);
-      }
-    });
-  }).catch(error => {
-    console.error('Fetch error in callGetAttendedApi:', error);
-    return Promise.reject(error);
-  });
+const callGetAttendedApi = async () => {
+  try {
+    console.log('API call /get-attended');
+    return await fetchApi('/get-attended', 'GET');
+  } catch (error) {
+    console.error('callGetAttendedApi failed:', error.message, error.data || '');
+    throw error;
+  }
 };
 
 /**
- * サーバーに学籍番号を送信し、カード忘れとして登録します。
- * @param {string} student_id 学生の学籍番号
- * @returns {Promise<object>} サーバーからのレスポンスJSONデータ、またはエラーを含むPromise
+ * カード忘れ登録を行うAPIを呼び出します。
+ * @param {string} student_id 学籍番号
+ * @returns {Promise<Object>} APIからのレスポンスオブジェクト
+ * @throws {Error} API呼び出しに失敗した場合
  */
-const callForgotCardApi = (student_id) => {
-  let formData = new FormData();
-  formData.append('student_id', student_id);
-  console.log('API call /forgot_card with formData:', formData);
-
-  return fetch('/forgot_card', {method: 'POST', body: formData}).then(response => {
-    return response.json().then(data => {
-      if (response.ok) {
-        console.log('API response /forgot_card OK:', data);
-        return data; // dataには {status: 'success', student_id: 'xxx'} または {status: 'error', message: '...'} が入る想定
-      } else {
-        console.error('API response /forgot_card Error:', data);
-        return Promise.reject(data);
-      }
-    });
-  }).catch(error => {
-    console.error('Fetch error in callForgotCardApi:', error);
-    return Promise.reject(error);
-  });
+const callForgotCardApi = async (student_id) => {
+  try {
+    console.log('API call /forgot_card with student_id:', student_id); // formDataログの代わり
+    return await fetchApi('/forgot_card', 'POST', { student_id });
+  } catch (error) {
+    console.error('callForgotCardApi failed:', error.message, error.data || '');
+    throw error;
+  }
 };
