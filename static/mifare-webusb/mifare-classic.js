@@ -117,6 +117,7 @@
     for (const sector of sectors) {
       const candidateKeys = keyProvider(sector) || [DEFAULT_KEY];
       let authenticated = false;
+      let lastAuthError = null; // authenticate が投げた例外（通信不可/未実装など）
       const authBlock = absoluteBlock(sector, 0);
 
       for (const key of candidateKeys) {
@@ -128,14 +129,20 @@
               break;
             }
           } catch (e) {
-            // この鍵では失敗。次を試す。
+            // authenticate が false を返すのは「鍵不一致」。例外を投げるのは
+            // 通信不可や未実装など別種の問題なので、最後の例外を控えておく。
+            lastAuthError = e;
           }
         }
         if (authenticated) { break; }
       }
 
       if (!authenticated) {
-        errors.push({ sector, message: `セクタ ${sector} の認証に失敗しました（鍵不一致）。` });
+        // 例外が出ていればその理由を優先して返す（「鍵不一致」に化けさせない）。
+        const message = lastAuthError
+          ? `セクタ ${sector} の認証でエラー: ${lastAuthError.message}`
+          : `セクタ ${sector} の認証に失敗しました（鍵不一致）。`;
+        errors.push({ sector, message });
         continue;
       }
 

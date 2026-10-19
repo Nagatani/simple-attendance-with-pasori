@@ -44,6 +44,23 @@ test('WebUSB リーダー: 既定ではセクタ認証が未検証エラー', as
   await assert.rejects(() => reader.transceiver.readBlock(0), /未検証・未実装/);
 });
 
+test('readAllSectors: authenticate が投げた例外は「鍵不一致」に化けず理由が出る', async () => {
+  const tx = {
+    authenticate: async () => { throw new Error('未検証・未実装です'); },
+    readBlock: async () => new Array(16).fill(0),
+  };
+  const { readSectors, errors } = await M.readAllSectors(tx, { sectors: [0] });
+  assert.deepStrictEqual(readSectors, []);
+  assert.match(errors[0].message, /認証でエラー: 未検証・未実装/);
+  assert.doesNotMatch(errors[0].message, /鍵不一致/);
+});
+
+test('readAllSectors: false は従来どおり「鍵不一致」', async () => {
+  const tx = { authenticate: async () => false, readBlock: async () => new Array(16).fill(0) };
+  const { errors } = await M.readAllSectors(tx, { sectors: [0] });
+  assert.match(errors[0].message, /鍵不一致/);
+});
+
 test('createCardDeduper: 新しいカードのみ発火、同一カードは抑止、離脱でリセット', () => {
   const d = M.createCardDeduper({ removalPolls: 2 });
   assert.strictEqual(d.accept('aa'), true);   // 新規カード
