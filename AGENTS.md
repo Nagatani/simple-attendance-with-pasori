@@ -42,7 +42,7 @@ pipenv run start <講義名> <第n回>   # 例: pipenv run start オブジェク
 # → http://127.0.0.1:8000/ を Chrome で開き「SETUP」を押してリーダーを選択
 
 pipenv run export <第n回>           # Attend_<n>.xlsx を出力
-pipenv run export 0                 # 全回を 1 ブックにまとめて Attend_all.xlsx を出力
+pipenv run export                   # 省略 (または 0) で全回を 1 ブックにまとめて Attend_all.xlsx を出力
 ```
 
 テスト・リンター・ビルド工程はありません。変更後は Python 側は `python -m py_compile main.py output_excel.py` 程度、フロントは実機 (PaSoRi + カード) かブラウザの DevTools で確認します。実機がない場合、`/attend` などの API は `curl -F card_id=XXXX http://127.0.0.1:8000/attend` で直接叩けます。

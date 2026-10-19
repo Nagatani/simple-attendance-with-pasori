@@ -42,7 +42,7 @@ $ pipenv run start 講義名を入力 1 # 最後の数字は講義のセクシ�
 $ pipenv run export 1 # 最後の数字は講義のセクションの第n回
 # Attend_1.xlsxが生成されています
 
-$ pipenv run export 0 # 0 を指定すると全回をまとめて出力
+$ pipenv run export # 省略または 0 を指定すると全回をまとめて出力
 # Attend_all.xlsxが生成されています
 ```
 

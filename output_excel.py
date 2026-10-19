@@ -5,7 +5,7 @@ import config
 
 import argparse
 parser = argparse.ArgumentParser()
-parser.add_argument("section_id", help="第何回かをパラメータで指定してください。 0を指定すると全部の回を1つのブックにまとめて出力します。", type=int)
+parser.add_argument("section_id", help="第何回かをパラメータで指定してください。 0を指定するか省略すると全部の回を1つのブックにまとめて出力します。", type=int, nargs="?", default=0)
 args = parser.parse_args()
 
 con = sqlite3.connect(config.database_name)
