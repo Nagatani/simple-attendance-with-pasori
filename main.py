@@ -37,7 +37,7 @@ def base():
 def get_students():
   with app.app_context():
     cur = get_db().cursor()
-    cur.execute("select card_id, student_id from students where student_id <> ''") # 一応、学籍番号が空のものは除外
+    cur.execute("select card_id, student_id from students where student_id <> '' COLLATE NOCASE "  ) # 一応、学籍番号が空のものは除外
     students = cur.fetchall()
     print(students)
     return jsonify(students)
@@ -47,7 +47,7 @@ def get_students():
 def get_attended():
   with app.app_context():
     cur = get_db().cursor()
-    cur.execute("select card_id, student_id from attendance where section_id = ?", (args.section_id, ))
+    cur.execute("select card_id, student_id from attendance where section_id = ? COLLATE NOCASE", (args.section_id, ))
     attended = cur.fetchall()
 
     print(attended)
@@ -72,7 +72,7 @@ def attend():
     student_id = ""
     message = ""
     
-    cur.execute("select student_id from students where card_id = ?", (card_id, ))
+    cur.execute("select student_id from students where card_id = ? COLLATE NOCASE", (card_id, ))
     student = cur.fetchone()
     if student == None:
       return jsonify({
@@ -84,13 +84,13 @@ def attend():
       student_id = student[0]
 
 
-      cur.execute("select student_id from attendance where section_id = ? and card_id = ?", (args.section_id, card_id, ))
+      cur.execute("select student_id from attendance where section_id = ? COLLATE NOCASE and card_id = ? COLLATE NOCASE", (args.section_id, card_id, ))
       attend = cur.fetchone()
       if attend == None:  
         cur.execute("insert into attendance (section_id, card_id, student_id) values (?, ?, ?)", (args.section_id, card_id, student_id, ))
         con.commit()
       else:
-        cur.execute("update attendance set student_id = ?, update_datetime = datetime(CURRENT_TIMESTAMP,'localtime') where section_id = ? and card_id = ?", (student_id, args.section_id, card_id, ))
+        cur.execute("update attendance set student_id = ?, update_datetime = datetime(CURRENT_TIMESTAMP,'localtime') where section_id = ? COLLATE NOCASE and card_id = ? COLLATE NOCASE", (student_id, args.section_id, card_id, ))
         con.commit()
 
 
