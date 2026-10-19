@@ -44,7 +44,9 @@ def export_all():
     ws = wb.create_sheet()
     ws.title = str(section[0])
 
-    cur.execute("select id, card_id, student_id, create_datetime, update_datetime from attendance where section_id = ? order by student_id", (section[0], ))
+    cur.execute("select id, card_id, student_id, forgot_card, create_datetime, update_datetime from attendance where section_id = ? order by student_id", (section[0], ))
+
+    ws.append(['ROWNUMBER', 'カードID', '学籍番号', 'カード忘れ', '登録日時', '更新日時'])
     attended = cur.fetchall()
     for row in attended:
       ws.append(row)
