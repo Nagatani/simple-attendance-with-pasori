@@ -67,7 +67,8 @@ const attendFromTransceiver = async (transceiver, card = {}) => {
     throw new Error('student_id_location が設定されていません（config.py を確認してください）。');
   }
 
-  const readOptions = { uid: card.uid || [] };
+  // 学籍番号が入っているセクタだけ読めばよい（全16セクタを総当たりしない）。
+  const readOptions = { uid: card.uid || [], sectors: [loc.sector] };
   if (!cfg.offline) {
     // 実機モードはセクタ認証に実鍵が要る（オフラインはダンプから直読みのため不要）。
     readOptions.keyProvider = MifareWebUSB.keyProviderFromCandidates(await loadKeys());

@@ -41,7 +41,7 @@
    * @param {Object} [opts]
    * @param {number} [opts.removalPolls=3] カード離脱と見なす連続ミス回数
    */
-  const createCardDeduper = ({ removalPolls = 3 } = {}) => {
+  const createCardDeduper = ({ removalPolls = 5 } = {}) => {
     let lastUid = null;
     let misses = 0;
     return {
@@ -141,7 +141,7 @@
     await s([0xff, 0x50, 0x00, 0x00, 0x02, 0x83, 0x00, 0x00]); await r(len); // rf off
     await s([0xff, 0x50, 0x00, 0x00, 0x02, 0x84, 0x00, 0x00]); await r(len); // rf on
     await s([0xff, 0x50, 0x00, 0x02, 0x04, 0x8f, 0x02, 0x00, 0x03, 0x00]); await r(len); // SwitchProtocolTypeA
-    await s([0xff, 0xca, 0x00, 0x00]); // Get UID
+    await s([0xff, 0xca, 0x00, 0x00, 0x00]); // Get UID (Le=00)
     const res = await r(len);
     if (res.length >= 14) {
       const uid = res.slice(10, 14);
@@ -335,7 +335,7 @@
      */
     const startPolling = (onCard, opts = {}) => {
       if (!device) { throw new Error('connect() を先に呼んでください。'); }
-      const { intervalMs = 200, removalPolls = 3 } = opts;
+      const { intervalMs = 200, removalPolls = 5 } = opts;
       const dedupe = createCardDeduper({ removalPolls });
       polling = true;
       (async () => {
