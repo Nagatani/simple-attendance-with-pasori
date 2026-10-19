@@ -47,7 +47,7 @@
 
 `static/mifare-webusb/` は DOM/アプリ非依存の独立ライブラリ（`window.MifareWebUSB`）で、フォルダごと切り出せます（[README](../static/mifare-webusb/README.md)）。
 
-カード読み取りには 2 モードある（`config.read_mode`）。`uid` は下記の従来フロー、`student_id` はカード内の学籍番号を読む新フロー。詳細は [card-reading.md](card-reading.md)。
+カード読み取りには 3 モードある（`config.read_mode`）。`uid` は下記の従来フロー、`student_id` はブラウザ WebUSB でカード内の学籍番号を読むフロー、`pcsc` はサーバーが PC/SC で読み取り SSE(`/events`) でブラウザへ push するフロー（`pcsc.js` が `EventSource` で受信）。RC-S300 でセクタを読むなら `pcsc`。詳細は [card-reading.md](card-reading.md)。
 
 ### カード読み取りの流れ
 

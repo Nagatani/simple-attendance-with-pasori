@@ -14,9 +14,12 @@ Sony PaSoRi (RC-S380 / RC-S300) で学生証の IC カード (FeliCa / MIFARE) �
 ## ディレクトリ構成
 
 ```
-main.py            Flask アプリ本体。起動時に DB テーブルを作成し、API を提供
+main.py            Flask アプリ本体。DB作成・各API・PC/SC背景読み取り・SSE配信
 output_excel.py    attendance テーブルを Excel に書き出す CLI
-config.py          ポート / ホスト / デバッグ / DB ファイル名 / テーブル初期化フラグ
+pcsc_reader.py     サーバー側 PC/SC 読み取り(pyscard)とシミュレーション版
+student_id_extract.py  サーバー側の学籍番号抽出（studentId.js の Python 版）
+events_hub.py      SSE プッシュ用の pub/sub
+config.py          モード/ポート/ホスト/デバッグ/DB/鍵/ダンプ などの設定
 templates/
   index.html       唯一の画面 (Jinja2)。ダイアログ 2 つと効果音 <audio> を含む
 static/
@@ -30,6 +33,7 @@ static/
     student-id.js      イメージの指定場所から値を抽出 extractString()
     package.json / README.md / index.js
   cardStudentId.js student_id モードのアプリ側グルー (ライブラリ→/attend→UI)
+  pcsc.js          pcsc モードのブラウザ側 (EventSource で SSE を受けて表示)
   custom.css       UIkit 風のクラス (uk-*) を自前実装した CSS (UIkit 本体は使っていない)
   pi.mp3, sound.mp3  読み取り音 / 出席登録音
 tools/
@@ -57,7 +61,8 @@ pipenv run export                   # 省略 (または 0) で全回を 1 ブッ
 カード読み取りライブラリ `static/mifare-webusb/` には単体テストがあります（依存追加なし）。
 
 ```sh
-node --test 'tests/*.test.js'
+node --test 'tests/*.test.js'          # JS ライブラリ
+python3 -m unittest discover -s tests   # Python (student_id_extract など)
 ```
 
 Python 側のリンター・ビルド工程はありません。変更後は `python -m py_compile main.py output_excel.py` 程度、フロントは実機 (PaSoRi + カード) かブラウザの DevTools で確認します。実機がない場合、`/attend` などの API は `curl -F card_id=XXXX http://127.0.0.1:8000/attend` で直接叩けます。`student_id` モードは `config.offline_dump` にダンプを設定すればオフラインで一通り動かせます（[docs/card-reading.md](docs/card-reading.md)）。
@@ -71,7 +76,7 @@ Python 側のリンター・ビルド工程はありません。変更後は `py
 - 同じカードの連続読み取りは `felica.js` の `beforeIdm` で抑止。登録ダイアログを閉じると `clearBeforeIdm()` でリセットされる。
 - RC-S300 接続時は `send` / `session` を `send300` / `session300` に差し替える（そのため `send` と `session` は `let` 宣言）。
 - サーバー側の講義回 (`section_id`) は argparse のグローバル `args` から参照している。1 プロセス = 1 講義回。
-- カード読み取りは 2 モード (`config.read_mode`)。`uid`=従来の UID 方式、`student_id`=カード内の学籍番号を読む方式。後者のデータ流れ（transceiver→`readAllSectors`→`extractString`→`/attend`）と実機対応の現状は [docs/card-reading.md](docs/card-reading.md)。読み取り部は独立ライブラリ [static/mifare-webusb/README.md](static/mifare-webusb/README.md)。
+- カード読み取りは 3 モード (`config.read_mode`)。`uid`=従来の UID 方式、`student_id`=ブラウザ WebUSB でカード内の学籍番号を読む、`pcsc`=サーバーが PC/SC で読み SSE でブラウザへ push。RC-S300 でセクタを読むなら `pcsc`（生 WebUSB では crypto1 が通らない）。詳細は [docs/card-reading.md](docs/card-reading.md)。ブラウザ側読み取りライブラリは [static/mifare-webusb/README.md](static/mifare-webusb/README.md)。
 
 API 仕様は [docs/api.md](docs/api.md)、DB スキーマは [docs/database.md](docs/database.md)、カード読み取りは [docs/card-reading.md](docs/card-reading.md)。
 

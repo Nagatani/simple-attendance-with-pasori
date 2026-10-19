@@ -90,6 +90,32 @@
 - `card_id` / `student_id` が空: `{"status": "error", "student_id": "", "message": "card_id or student_id is empty."}`
 - 既に登録済みのカード: `{"status": "error", "student_id": "<登録済みの学籍番号>", "message": "このカードは登録済みです: ..."}`
 
+## サーバー側 PC/SC モードの API (`read_mode = 'pcsc'`)
+
+### `GET /events`
+
+Server-Sent Events。サーバーがカードを読み取るたびにイベントを push します。
+`Content-Type: text/event-stream`。ブラウザは `EventSource('/events')` で購読します。
+
+```
+data: {"type":"attend","status":"ok","student_id":"K2100001","uid":"26fa40a6","message":"出席登録完了しました: K2100001"}
+```
+
+`type`: `attend`（登録結果）/`reader`（リーダーエラー）。`status`: `ok`/`error`。
+
+### `GET /pcsc/status`
+
+`{"running": true, "last_error": null, "simulate": false}`。
+
+### `POST /pcsc/start` / `POST /pcsc/stop`
+
+背景読み取りループの開始/停止。`start` は `pcsc` モード以外では 404。
+
+### `POST /pcsc/simulate-tap`
+
+シミュレーション用（`pcsc_simulate` 設定時のみ、他は 404）。ダンプを 1 回読んで登録し、
+`/events` へ push。レスポンスは `/attend` と同形式。
+
 ## `POST /forgot_card`
 
 カードを忘れた学生を学籍番号で出席登録します。

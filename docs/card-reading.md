@@ -1,11 +1,16 @@
 # カード読み取りと学籍番号の取得
 
-このシステムには 2 つのカード読み取りモードがあり、`config.read_mode`（Python コード上の 1 行）で切り替えます。**既定は `uid`** です。
+このシステムには 3 つのカード読み取りモードがあり、`config.read_mode`（Python コード上の 1 行）で切り替えます。**既定は `uid`** です。
 
-| モード | 概要 | 事前登録 |
-|---|---|---|
-| `uid`（既定） | カードの UID/IDm を `card_id` として出席登録する従来方式。未登録カードは学籍番号の手入力ダイアログが出る。 | 必要（初回に UID↔学籍番号を登録） |
-| `student_id` | カード内（MIFARE Classic のセクタ）に書かれた学籍番号を読み取り、そのまま出席登録する。 | 不要 |
+| モード | 概要 | 読み取り場所 | 事前登録 |
+|---|---|---|---|
+| `uid`（既定） | カードの UID/IDm を `card_id` として出席登録する従来方式。未登録カードは学籍番号の手入力ダイアログが出る。 | ブラウザ(WebUSB) | 必要（初回に UID↔学籍番号を登録） |
+| `student_id` | カード内のセクタに書かれた学籍番号をブラウザ(WebUSB)で読み取り、そのまま登録。 | ブラウザ(WebUSB) | 不要 |
+| `pcsc` | サーバーが PC/SC 経由でカードを読み、学籍番号を抽出・登録し、SSE でブラウザへプッシュ。**RC-S300 でセクタを読むならこれが確実**。 | サーバー(PC/SC) | 不要 |
+
+> RC-S300 は crypto1 を PC/SC ドライバ経由でしか実行できないため、ブラウザの生 WebUSB
+> （`student_id` モード）ではセクタ認証が通りません（`6983`）。RC-S300 でカード内の
+> 学籍番号を読むには **`pcsc` モード**を使ってください。詳細は後述「サーバー側 PC/SC モード」。
 
 `uid` モードでは `student_id` 用の機能は一切動きません（`/card-image` は 404、`/config` も学籍番号の場所を返さない）。`mifare-webusb/*` と `cardStudentId.js` は読み込まれますが、ボタンが無効なので待機するだけです。
 
@@ -95,7 +100,52 @@ student_id_location = {
   補足: ブラウザの自動再生ポリシーにより、セッション中に一度も操作していない状態では
   読み取り音が鳴らないことがある（読み取り自体は動作する）。
 
-## 実機でのセクタ読み取り (crypto1)
+## サーバー側 PC/SC モード (`read_mode = 'pcsc'`)
+
+RC-S300 でカード内の学籍番号を読む確実な方式。crypto1 はリーダー＋PC/SC ドライバが
+**サーバーと同じ PC 上でローカルに実行**するので、往復遅延の問題が起きず、サーバーは
+認証済みの平文セクタを受け取れます。ブラウザは読み取りに関与せず、通知の表示だけです。
+
+```
+PaSoRi ──PC/SC──▶ サーバー(pyscard) ──[平文セクタ]──▶ 学籍番号抽出 ──▶ DB登録
+                                                              │
+                                                     SSE(/events) で push
+                                                              ▼
+                                                     開いているブラウザが即時表示
+```
+
+関連ファイル:
+
+```
+pcsc_reader.py          PcscReader(pyscard)/SimulatedReader(ダンプ)。FF82/86/B0でセクタ読み取り
+student_id_extract.py   読み取ったイメージから学籍番号を抽出（studentId.js の Python 版）
+events_hub.py           SSE 配信用の pub/sub
+main.py                 /events(SSE), /pcsc/start|stop|status|simulate-tap, 背景読み取りループ
+static/pcsc.js          ブラウザ: EventSource で push を受け、画面更新・開始/停止
+tools/probe_pcsc.py     PC/SC 可否の検証スクリプト（ローカル専用）
+```
+
+### 導入と確認手順
+
+1. `pipenv install pyscard`（`pcsc` モードでのみ必要な任意依存）。
+2. **可否を検証**: `python3 tools/probe_pcsc.py`。リーダーが見え、`FF 86`(Authenticate)が
+   `90 00` を返せば OK。
+3. `config.py` を `read_mode = 'pcsc'` にし、`student_id_location` と `keys_file` を設定。
+4. `pipenv run start 講義名 1` で起動し、`http://127.0.0.1:8000/` を開く。サーバーが
+   背景で読み取りを開始し、カードをかざすたびに画面へ push 表示＆登録される。
+
+### ハード無しでの動作確認（シミュレーション）
+
+`config.pcsc_simulate` に .mfd を設定すると、実機/ドライバ無しでも SSE プッシュと出席登録を
+検証できます。画面の「テスト読み取り（シミュレーション）」ボタンで 1 枚分を発火します。
+
+### 鍵と個人情報の扱い
+
+`pcsc` モードでは**鍵(keys_file)はサーバー内に閉じ、ブラウザへ渡しません**（`/keys` は
+`student_id` モード専用）。読み取ったセクタもサーバー内で処理し、ブラウザへは抽出後の
+学籍番号だけが push されます。
+
+## 実機でのセクタ読み取り (crypto1) ― ブラウザ WebUSB の場合
 
 全セクタを読むには MIFARE Classic の crypto1 認証（Load Authentication Keys →
 Authentication → Read Block）が必要で、実機でのセクタ認証には実鍵が要ります。

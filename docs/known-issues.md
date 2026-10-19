@@ -4,9 +4,11 @@
 
 ## 未完了・保留
 
-- **実機(WebUSB) RC-S300 のセクタ読み取りは第一版・実機検証中**: PC/SC 風疑似APDU
-  (FF 82/86/B0) で実装済みだが未検証。TX/RX ログを見て調整する段階。RC-S380 は未実装。
-  詳細は [card-reading.md](card-reading.md)「実機でのセクタ読み取り (crypto1)」。
+- **RC-S300 は生 WebUSB (`student_id` モード) ではセクタ認証が通らない**（`6983`）。crypto1 を
+  PC/SC ドライバ経由でしか実行できないため。→ RC-S300 でカード内学籍番号を読むなら
+  **`pcsc` モード**（サーバー側 PC/SC + SSE）を使う。RC-S380 の WebUSB crypto1 も未実装。
+- **`pcsc` モードは pyscard と Sony の PC/SC ドライバに依存**（実機検証が前提）。`pyscard` は
+  任意依存で、使う場合のみ `pipenv install pyscard`。可否は `tools/probe_pcsc.py` で確認する。
 - **`/card-image`・`/keys` は個人情報/秘密情報を返す**: `/card-image` は学籍番号を含む
   ダンプ、`/keys` は鍵を返す。必ず `run_host = '127.0.0.1'`（既定）で、共有ネットワークでは
   使わない。いずれも `read_mode = 'student_id'` のときのみ有効。
