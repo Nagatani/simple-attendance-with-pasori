@@ -28,18 +28,30 @@ WebUSB で Sony PaSoRi (RC-S380 / RC-S300) から MIFARE Classic 1K を読み取
   const { createWebUsbReader, readAllSectors, parseKeysFile,
           keyProviderFromCandidates, extractString } = MifareWebUSB;
 
-  async function run() {
+  // 1 回だけ読む例
+  async function readOnce() {
     const reader = createWebUsbReader();
-    await reader.connect();                 // ユーザー操作(クリック)内で呼ぶこと
+    await reader.connect();                 // requestDevice を伴う場合はユーザー操作内で
     const { uidHex } = await reader.pollUid();
 
     const keys = parseKeysFile(keysFileText);
     const { image, readSectors, errors } = await readAllSectors(reader.transceiver, {
       keyProvider: keyProviderFromCandidates(keys),
     });
+    console.log(uidHex, extractString(image, { sector: 1, length: 8 }), readSectors, errors);
+  }
 
-    const id = extractString(image, { sector: 1, length: 8, encoding: 'ascii' });
-    console.log(uidHex, id, readSectors, errors);
+  // かざすたびに連続で読む例（ボタンは初回接続の 1 回だけ）
+  async function readContinuously() {
+    const reader = createWebUsbReader();
+    // 許可済みなら操作不要で接続。無ければ NO_PERMITTED_DEVICE を投げるので
+    // その時だけユーザー操作内で connect({ interactive: true }) を呼ぶ。
+    await reader.connect({ interactive: false });
+    const stop = reader.startPolling(async ({ uidHex }) => {
+      const { image } = await readAllSectors(reader.transceiver);
+      console.log(uidHex, extractString(image, { sector: 1, length: 8 }));
+    });
+    // stop(); で停止
   }
 </script>
 ```
@@ -58,7 +70,10 @@ const id = extractString(image, { sector: 1, length: 8, encoding: 'ascii' });
 
 - `readAllSectors(transceiver, options)` → `{ image: Uint8Array(1024), readSectors, errors }`
 - `createImageTransceiver(image, { verifyKeys })` → transceiver（イメージ由来）
-- `createWebUsbReader(options)` → `{ connect, pollUid, transceiver, disconnect, deviceModel }`
+- `createWebUsbReader(options)` → `{ connect, pollUid, startPolling, transceiver, disconnect, deviceModel }`
+  - `connect({ interactive })`: `interactive:false` は許可済みデバイスのみ（操作不要）。無ければ `code==='NO_PERMITTED_DEVICE'` を投げる。
+  - `startPolling(onCard, { intervalMs, removalPolls })`: 連続ポーリング。新しいカードのたびに `onCard({uid, uidHex})` を呼ぶ。戻り値は停止関数。
+- `createCardDeduper({ removalPolls })` → 連続読取の重複抑止ヘルパー
 - `parseKeysFile(text)` / `hexToKey(hex)` / `keyProviderFromCandidates(keys)`
 - `extractString(image, location)`（別名 `extractStudentId`）
 - 定数: `SECTORS`, `BLOCKS_PER_SECTOR`, `BLOCK_SIZE`, `IMAGE_SIZE`, `KEY_A`, `KEY_B`, `DEFAULT_KEY`

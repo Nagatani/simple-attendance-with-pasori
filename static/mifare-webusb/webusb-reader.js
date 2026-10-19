@@ -33,6 +33,33 @@
   const DEVICE_MODEL = { 0x06c1: 380, 0x06c3: 380, 0x0dc8: 300, 0x0dc9: 300 };
 
   const sleep = (msec) => new Promise((resolve) => setTimeout(resolve, msec));
+
+  /**
+   * 連続ポーリング時に「新しいカードがかざされた瞬間」だけを検出するための
+   * 重複抑止ヘルパー。同じカードがリーダー上に留まっている間は再発火せず、
+   * カードが離れる(UID が一定回数取れない)と状態をリセットして再読取を許す。
+   * @param {Object} [opts]
+   * @param {number} [opts.removalPolls=3] カード離脱と見なす連続ミス回数
+   */
+  const createCardDeduper = ({ removalPolls = 3 } = {}) => {
+    let lastUid = null;
+    let misses = 0;
+    return {
+      /** @returns {boolean} 新しいカードとして発火すべきなら true */
+      accept(uidHex) {
+        if (!uidHex) {
+          if (lastUid !== null && (misses += 1) >= removalPolls) { lastUid = null; }
+          return false;
+        }
+        misses = 0;
+        if (uidHex === lastUid) { return false; }
+        lastUid = uidHex;
+        return true;
+      },
+      reset() { lastUid = null; misses = 0; },
+    };
+  };
+
   const padZero = (num, p) => ('0'.repeat(p) + num).slice(-p);
   const dec2hex = (n) => padZero((n * 1).toString(16), 2);
   const toHex = (bytes) => Array.from(bytes).map(dec2hex).join('');
@@ -170,6 +197,7 @@
     let device = null;
     let ep = { in: 0, out: 0 };
     let model = null;
+    let polling = false;
 
     const requireNavigatorUsb = () => {
       if (typeof navigator === 'undefined' || !navigator.usb) {
@@ -177,13 +205,29 @@
       }
     };
 
-    const connect = async () => {
+    /**
+     * リーダーに接続する。
+     * @param {Object} [opts]
+     * @param {boolean} [opts.interactive=true]
+     *   true: 許可済みが無ければ requestDevice() で選択ダイアログを出す
+     *         （ユーザー操作内でのみ呼べる）。
+     *   false: 許可済みデバイスだけを使い、無ければ NO_PERMITTED_DEVICE を投げる
+     *         （ページ読み込み時の自動接続用。ユーザー操作不要）。
+     * @returns {Promise<number|null>} 機種(380/300)
+     */
+    const connect = async ({ interactive = true } = {}) => {
       requireNavigatorUsb();
-      const paired = (await navigator.usb.getDevices())
+      const permitted = (await navigator.usb.getDevices())
         .filter((d) => DEVICE_FILTERS.map((f) => f.productId).includes(d.productId));
-      device = paired.length === 1
-        ? paired[0]
-        : await navigator.usb.requestDevice({ filters: DEVICE_FILTERS });
+      if (permitted.length >= 1) {
+        device = permitted[0];
+      } else if (interactive) {
+        device = await navigator.usb.requestDevice({ filters: DEVICE_FILTERS });
+      } else {
+        const err = new Error('許可済みのリーダーが見つかりません。初回はユーザー操作(クリック)で接続してください。');
+        err.code = 'NO_PERMITTED_DEVICE';
+        throw err;
+      }
       model = DEVICE_MODEL[device.productId] || null;
 
       await device.open();
@@ -223,16 +267,59 @@
       },
     };
 
+    /**
+     * 接続後、カードを連続ポーリングし、新しいカードがかざされるたびに
+     * onCard を呼ぶ。ボタンを押さずに「かざすだけ」で読み取るための仕組み。
+     * @param {function({uid:number[], uidHex:string}): (void|Promise<void>)} onCard
+     * @param {Object} [opts]
+     * @param {number} [opts.intervalMs=200] カード無し時の待機間隔
+     * @param {number} [opts.removalPolls=3] カード離脱と見なす連続ミス回数
+     * @returns {function(): void} 停止関数
+     */
+    const startPolling = (onCard, opts = {}) => {
+      if (!device) { throw new Error('connect() を先に呼んでください。'); }
+      const { intervalMs = 200, removalPolls = 3 } = opts;
+      const dedupe = createCardDeduper({ removalPolls });
+      polling = true;
+      (async () => {
+        while (polling) {
+          try {
+            // eslint-disable-next-line no-await-in-loop
+            const polled = await pollUid();
+            const uidHex = polled && polled.uidHex;
+            if (dedupe.accept(uidHex)) {
+              try {
+                // eslint-disable-next-line no-await-in-loop
+                await onCard(polled);
+              } catch (e) {
+                console.error('onCard でエラー:', e);
+              }
+            } else if (!uidHex) {
+              // eslint-disable-next-line no-await-in-loop
+              await sleep(intervalMs);
+            }
+          } catch (e) {
+            console.error('ポーリング中エラー:', e);
+            // eslint-disable-next-line no-await-in-loop
+            await sleep(intervalMs * 2);
+          }
+        }
+      })();
+      return () => { polling = false; };
+    };
+
     const disconnect = async () => {
+      polling = false;
       if (device) {
         try { await device.close(); } catch (e) { /* noop */ }
         device = null;
       }
     };
 
-    return { connect, pollUid, transceiver, disconnect, deviceModel: () => model };
+    return { connect, pollUid, startPolling, transceiver, disconnect, deviceModel: () => model };
   };
 
   exports.DEVICE_FILTERS = DEVICE_FILTERS;
   exports.createWebUsbReader = createWebUsbReader;
+  exports.createCardDeduper = createCardDeduper;
 });

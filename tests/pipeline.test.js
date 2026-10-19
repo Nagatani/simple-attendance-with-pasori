@@ -43,3 +43,13 @@ test('WebUSB リーダー: 既定ではセクタ認証が未検証エラー', as
   await assert.rejects(() => reader.transceiver.authenticate({ sector: 0, keyType: M.KEY_A, key: M.DEFAULT_KEY }), /未検証・未実装/);
   await assert.rejects(() => reader.transceiver.readBlock(0), /未検証・未実装/);
 });
+
+test('createCardDeduper: 新しいカードのみ発火、同一カードは抑止、離脱でリセット', () => {
+  const d = M.createCardDeduper({ removalPolls: 2 });
+  assert.strictEqual(d.accept('aa'), true);   // 新規カード
+  assert.strictEqual(d.accept('aa'), false);  // 同じカードが乗り続け
+  assert.strictEqual(d.accept('bb'), true);   // 別カードに変わった
+  assert.strictEqual(d.accept(null), false);  // 離脱 1 回目
+  assert.strictEqual(d.accept(null), false);  // 離脱 2 回目 → リセット
+  assert.strictEqual(d.accept('bb'), true);   // 同じカードを再度かざすと発火
+});
