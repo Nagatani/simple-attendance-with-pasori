@@ -65,5 +65,5 @@ FeliCa は IDm（8 バイト = 16 桁の 16 進）、MIFARE は UID（4 バイ�
 ## Excel 出力 (output_excel.py)
 
 - `section_id > 0`: その回のシートを持つ `Attend_<n>.xlsx`。列は `ROWNUMBER, カードID, 学籍番号, カード忘れ, 登録日時, 更新日時`。
-- `section_id == 0`: 回ごとにシートを分けた `Attend_all.xlsx`。ヘッダー行とカード忘れ列は**出力されない**（列は id, card_id, student_id, create_datetime, update_datetime）。
+- `section_id == 0`（または省略）: 回ごとにシートを分けた `Attend_all.xlsx`。列は上と同じ。
 - 出力先はカレントディレクトリ。

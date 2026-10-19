@@ -2,7 +2,7 @@
 
 - すべての API は起動時に指定した講義回 `section_id` を対象にします。
 - POST のパラメータはフォーム形式（`multipart/form-data` または `application/x-www-form-urlencoded`）。
-- 業務エラーも HTTP 200 で返り、`status` が `"error"` になります。想定外の例外（UNIQUE 制約違反など）は Flask の 500 になります。
+- 業務エラーも HTTP 200 で返り、`status` が `"error"` になります。想定外の例外は Flask の 500 になります。
 
 ## `GET /`
 
@@ -46,7 +46,9 @@
 | `card_id` | ○ | カード ID |
 | `student_id` | ○ | 学籍番号 |
 
-成功時は `/attend` と同じ形式。既に同じ `card_id` が `students` に存在する、またはこの回に出席済みの場合は UNIQUE 制約違反で 500 になります（[known-issues.md](known-issues.md)）。
+- 成功時は `/attend` と同じ形式。この回に既に出席済みの場合は出席の INSERT をスキップします。
+- `card_id` / `student_id` が空: `{"status": "error", "student_id": "", "message": "card_id or student_id is empty."}`
+- 既に登録済みのカード: `{"status": "error", "student_id": "<登録済みの学籍番号>", "message": "このカードは登録済みです: ..."}`
 
 ## `POST /forgot_card`
 

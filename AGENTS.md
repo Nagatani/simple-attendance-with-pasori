@@ -73,8 +73,6 @@ API 仕様は [docs/api.md](docs/api.md)、DB スキーマは [docs/database.md]
 
 [docs/known-issues.md](docs/known-issues.md) に一覧があります。作業前に目を通してください。特に:
 
-- `append.js` が呼んでいる `updateHeadingMessage` はどこにも定義されていない（エラー時に ReferenceError）。
-- `/register` は重複チェックをせず、UNIQUE 制約違反で 500 になる。
 - `config.init_tables = True` で起動すると**全テーブルが DROP される**。誤って有効にしないこと。
 - WebUSB はセキュアコンテキスト必須。`http://127.0.0.1` / `localhost` 以外の HTTP アクセスではカードリーダーが使えない。
 

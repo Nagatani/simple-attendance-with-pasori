@@ -37,5 +37,5 @@ UNIQUE インデックス `attendanceindex` (`section_id`, `card_id`)。
 
 - `nverchar` は `nvarchar` の typo ですが、SQLite は型名を厳密に扱わないため TEXT 相当として動作します。既存 DB との互換のため変更していません。
 - `section_id` は TEXT 列ですが、Python からは int を渡しています。SQLite の型親和性により比較は問題なく動きます。
-- カード ID の検索は `COLLATE NOCASE` で大文字小文字を区別せずに行います（`/forgot_card` のクエリを除く）。
+- カード ID・学籍番号の検索は `COLLATE NOCASE` で大文字小文字を区別せずに行います。
 - 学生情報の一括投入用の機能はありません。必要な場合は `sqlite3 attend.db` で直接 INSERT します。
