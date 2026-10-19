@@ -113,15 +113,29 @@ def register_student():
     student_id = request.form.get("student_id", None)
     print(card_id)
     print(student_id)
-    if card_id == None or student_id == None:
+    if not card_id or not student_id:
       return jsonify({
         "status": "error",
         "student_id": "",
         "message": "card_id or student_id is empty."
       })
 
+    # 既に登録済みのカードはUNIQUE制約違反になるため、事前にチェックする
+    cur.execute("select student_id from students where card_id = ? COLLATE NOCASE", (card_id, ))
+    student = cur.fetchone()
+    if student != None:
+      return jsonify({
+        "status": "error",
+        "student_id": student[0],
+        "message": "このカードは登録済みです: {}".format(student[0])
+      })
+
     cur.execute('''insert into students (card_id, student_id) values (?, ?)''', (card_id, student_id))
-    cur.execute('''insert into attendance (section_id, card_id, student_id) values (?, ?, ?)''', (args.section_id, card_id, student_id))
+
+    cur.execute("select student_id from attendance where section_id = ? COLLATE NOCASE and card_id = ? COLLATE NOCASE", (args.section_id, card_id, ))
+    attend = cur.fetchone()
+    if attend == None:
+      cur.execute('''insert into attendance (section_id, card_id, student_id) values (?, ?, ?)''', (args.section_id, card_id, student_id))
     con.commit()
 
     message = "出席登録完了しました: {}".format(student_id)
