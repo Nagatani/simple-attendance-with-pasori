@@ -10,7 +10,11 @@
     <script src="{{ url_for('static', filename='ui.js') }}" defer></script>
     <script src="{{ url_for('static', filename='api.js') }}" defer></script>
     <script src="{{ url_for('static', filename='felica.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='mifareClassic.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='studentId.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='mifareReader.js') }}" defer></script>
     <script src="{{ url_for('static', filename='append.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='cardStudentId.js') }}" defer></script>
   </head>
   <body>
     <div class="uk-navbar-container uk-margin">
@@ -21,6 +25,7 @@
           </div>
           <div class="uk-navbar-right">
             <button id="start" class="uk-button uk-button-large uk-button-default uk-width-1-1 uk-text-capitalize">SETUP</button>
+            <button id="readStudentId" class="uk-button uk-button-large uk-button-default uk-width-1-1" style="display: none;">カードから学籍番号を読み取る</button>
             <div id="waiting" style="display: none;">
               <button class="uk-button uk-button-large uk-button-default uk-width-1-1" disabled>
                 <div class="custom-spinner"></div>

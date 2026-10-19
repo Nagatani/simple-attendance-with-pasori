@@ -1,5 +1,6 @@
-from flask import Flask, render_template, jsonify, request, g
+from flask import Flask, render_template, jsonify, request, g, abort
 import sqlite3
+import os
 
 import config
 
@@ -33,6 +34,38 @@ def base():
                          section_id=args.section_id)
 
 
+@app.route("/config")
+def get_config():
+  """ブラウザ側のカード読み取りパイプラインが必要とする設定を返す。
+  鍵(keys_file)などの秘密情報は含めない。"""
+  return jsonify({
+    "read_mode": getattr(config, "read_mode", "uid"),
+    "student_id_location": getattr(config, "student_id_location", None),
+    "offline": bool(getattr(config, "offline_dump", None)),
+  })
+
+
+@app.route("/card-image")
+def card_image():
+  """オフライン(デモ)用に、設定された .mfd ダンプを「読み取ったカード」として返す。
+  config.offline_dump が未設定なら 404。個人情報を含むため 127.0.0.1 専用の想定。"""
+  dump_path = getattr(config, "offline_dump", None)
+  if not dump_path:
+    abort(404)
+  if not os.path.exists(dump_path):
+    return jsonify({"status": "error", "message": "offline_dump が見つかりません: {}".format(dump_path)}), 404
+
+  with open(dump_path, "rb") as f:
+    raw = f.read()
+
+  uid = list(raw[0:4]) if len(raw) >= 4 else []
+  return jsonify({
+    "status": "ok",
+    "uid": "".join("{:02x}".format(b) for b in uid),
+    "image": list(raw),  # 1024 バイトの配列
+  })
+
+
 @app.route("/get-students")
 def get_students():
   with app.app_context():
@@ -61,7 +94,29 @@ def attend():
     cur = con.cursor()
 
     card_id = request.form.get("card_id", None)
-    print(card_id)
+    student_id_param = request.form.get("student_id", None)
+    print(card_id, student_id_param)
+
+    # --- カード内学籍番号モード ---
+    # カードのセクタから読み取った学籍番号を直接登録する。事前のカード登録は不要。
+    # attendance.card_id には、UID があればそれを、無ければ学籍番号を入れる。
+    if student_id_param:
+      student_id = student_id_param
+      key = card_id if card_id else student_id
+      cur.execute("select student_id from attendance where section_id = ? COLLATE NOCASE and card_id = ? COLLATE NOCASE", (args.section_id, key, ))
+      attend = cur.fetchone()
+      if attend == None:
+        cur.execute("insert into attendance (section_id, card_id, student_id) values (?, ?, ?)", (args.section_id, key, student_id, ))
+      else:
+        cur.execute("update attendance set student_id = ?, update_datetime = datetime(CURRENT_TIMESTAMP,'localtime') where section_id = ? COLLATE NOCASE and card_id = ? COLLATE NOCASE", (student_id, args.section_id, key, ))
+      con.commit()
+      return jsonify({
+        "status": "ok",
+        "student_id": student_id,
+        "message": "出席登録完了しました: {}".format(student_id)
+      })
+
+    # --- 従来の UID モード ---
     if card_id == None:
       return jsonify({
         "status": "error",
@@ -71,7 +126,7 @@ def attend():
 
     student_id = ""
     message = ""
-    
+
     cur.execute("select student_id from students where card_id = ? COLLATE NOCASE", (card_id, ))
     student = cur.fetchone()
     if student == None:
