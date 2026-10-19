@@ -47,6 +47,14 @@ const showAlreadyAttendedMessage = (student_id) => {
 };
 
 /**
+ * ヘッダーに任意のメッセージ（主にエラー）を表示します。
+ * @param {string} message 表示するメッセージ
+ */
+const updateHeadingMessage = (message) => {
+  hedding1.textContent = message;
+};
+
+/**
  * 出席者リストの表示を全てクリアします。
  */
 const clearAttendedListDisplay = () => {
