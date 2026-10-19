@@ -178,6 +178,58 @@
     //   認証済みセクタに対し MIFARE READ (0x30 <block>) を送り 16 バイトを取得
   };
 
+  // --- RC-S300: PC/SC 風疑似APDU による crypto1 (★第一版・実機検証中★) ----
+  // RC-S300 は FF クラスの疑似APDU(FF CA 等)を send300 経由で受け付ける実績がある。
+  // 同じ経路で MIFARE 標準の Load Key / General Authenticate / Read Binary を送る。
+  //   Load Key          : FF 82 00 00 06 <key6>
+  //   General Authenticate: FF 86 00 00 05 01 00 <block> <keyType(60/61)> <keySlot=00>
+  //   Read Binary       : FF B0 00 <block> 10
+  // 応答は CCID 応答(先頭10バイトヘッダ) + APDU応答(データ + SW1 SW2)。
+  // これは第一版のため、送受信フレームをログ出力して実機ログで調整する。
+
+  /** CCID 応答から APDU のデータ部と SW を取り出す。 */
+  const parseCcidApdu = (res) => {
+    if (!res || res.length < 12) { return { data: [], sw: [], raw: res || [] }; }
+    const payloadLen = res[1] | (res[2] << 8) | (res[3] << 16) | (res[4] << 24);
+    const end = Math.min(10 + payloadLen, res.length);
+    const payload = res.slice(10, end);
+    return { data: payload.slice(0, -2), sw: payload.slice(-2), raw: res };
+  };
+
+  const swOk = (sw) => sw.length === 2 && sw[0] === 0x90 && sw[1] === 0x00;
+
+  const logFrame = (ctx, dir, bytes) => {
+    if (ctx && ctx.debug) { console.info(`[mifare-webusb] ${dir}: ${toHex(bytes)}`); }
+  };
+
+  /** FF クラス疑似APDU を送って CCID 応答を解析する。 */
+  const rcs300Apdu = async (ctx, apdu, recvLen = 64) => {
+    logFrame(ctx, 'TX', apdu);
+    await ctx.send(apdu);
+    const res = await ctx.receive(recvLen);
+    logFrame(ctx, 'RX', res);
+    return parseCcidApdu(res);
+  };
+
+  const rcs300LoadKey = async (ctx, key) => {
+    const { sw } = await rcs300Apdu(ctx, [0xff, 0x82, 0x00, 0x00, 0x06].concat(key));
+    return swOk(sw);
+  };
+
+  const rcs300Authenticate = async (ctx, { block, keyType, key }) => {
+    if (!(await rcs300LoadKey(ctx, key))) { return false; }
+    const { sw } = await rcs300Apdu(ctx, [0xff, 0x86, 0x00, 0x00, 0x05, 0x01, 0x00, block & 0xff, keyType, 0x00]);
+    return swOk(sw);
+  };
+
+  const rcs300ReadBlock = async (ctx, block) => {
+    const { data, sw } = await rcs300Apdu(ctx, [0xff, 0xb0, 0x00, block & 0xff, 0x10]);
+    if (!swOk(sw) || data.length !== 16) {
+      throw new Error(`READ ブロック ${block} 失敗 (SW=${toHex(sw)}, len=${data.length})`);
+    }
+    return data;
+  };
+
   /**
    * WebUSB MIFARE Classic リーダーを生成する。
    * @param {Object} [options]
@@ -193,7 +245,7 @@
    * }}
    */
   const createWebUsbReader = (options = {}) => {
-    const { enableUnvalidatedSectorAuth = false } = options;
+    const { enableUnvalidatedSectorAuth = false, debug = true } = options;
     let device = null;
     let ep = { in: 0, out: 0 };
     let model = null;
@@ -252,16 +304,21 @@
       get device() { return device; },
       get ep() { return ep; },
       get model() { return model; },
+      debug,
       send: (data) => (model === 300 ? send300(ep, device, data) : send380(ep, device, data)),
       receive: (n) => receive(ep, device, n),
     };
 
     const transceiver = {
       authenticate: async (params) => {
+        // RC-S300 は PC/SC 風疑似APDU で実装済み（第一版）。
+        if (model === 300) { return rcs300Authenticate(ctx, params); }
+        // RC-S380 は未実装。
         if (!enableUnvalidatedSectorAuth) { throw unvalidatedError(); }
         return authenticateSeam(ctx, params);
       },
       readBlock: async (absBlock) => {
+        if (model === 300) { return rcs300ReadBlock(ctx, absBlock); }
         if (!enableUnvalidatedSectorAuth) { throw unvalidatedError(); }
         return readBlockSeam(ctx, absBlock);
       },
@@ -322,4 +379,8 @@
   exports.DEVICE_FILTERS = DEVICE_FILTERS;
   exports.createWebUsbReader = createWebUsbReader;
   exports.createCardDeduper = createCardDeduper;
+  // RC-S300 の疑似APDUコマンド（テスト・デバッグ用に公開）
+  exports.rcs300 = {
+    parseCcidApdu, swOk, loadKey: rcs300LoadKey, authenticate: rcs300Authenticate, readBlock: rcs300ReadBlock,
+  };
 });

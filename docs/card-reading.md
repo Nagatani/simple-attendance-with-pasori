@@ -95,20 +95,39 @@ student_id_location = {
   補足: ブラウザの自動再生ポリシーにより、セッション中に一度も操作していない状態では
   読み取り音が鳴らないことがある（読み取り自体は動作する）。
 
-## 実機対応の現状（重要）
+## 実機でのセクタ読み取り (crypto1)
 
-実機(RC-S380 / RC-S300)で全セクタを読むには MIFARE Classic の crypto1 認証
-（Load Authentication Keys → Authentication → Read Block）が必要です。調査の結果:
+全セクタを読むには MIFARE Classic の crypto1 認証（Load Authentication Keys →
+Authentication → Read Block）が必要で、実機でのセクタ認証には実鍵が要ります。
+鍵はサーバの `/keys`（`config.keys_file` を読む。`student_id` モード・127.0.0.1 限定）
+から取得し、ブラウザで `keyProvider` としてライブラリに渡します。
 
-- セクタ読み取りの成功例はいずれも **PC/SC ドライバ経由**（Sony の NFC Port
-  Software が crypto1 を処理）で、本プロジェクトのような **生の WebUSB で crypto1 が
-  できたという確証は見つかっていません**。Port-100 チップは crypto1 を内蔵しないと
-  いう理解が一般的で、現行の UID 読み取りは認証不要なので動いています。
-- そのため `webusb-reader.js` では crypto1 のセクタ認証/読み取りを SEAM
-  (`authenticateSeam` / `readBlockSeam`) として分離し、既定では明示エラーを投げます。
-  実機検証時は `createWebUsbReader({ enableUnvalidatedSectorAuth: true })` とし、
-  console / USB 通信ログで確認したコマンド列を SEAM 部に実装します
-  （デバイス接続・Type A 有効化・UID 取得は既に実装済み）。
+### RC-S300（★第一版・実機検証中★）
+
+RC-S300 は `FF` クラスの疑似APDU（`FF CA` 等）を受け付ける実績があるため、同じ経路で
+標準の MIFARE コマンドを送って実装しています（`webusb-reader.js` の `rcs300*`）。
+
+```
+Load Key            : FF 82 00 00 06 <key6>
+General Authenticate: FF 86 00 00 05 01 00 <block> <keyType 60/61> <keySlot 00>
+Read Binary         : FF B0 00 <block> 10
+```
+
+第一版のため、送受信フレームを `console.info('[mifare-webusb] TX/RX: …')` に出力します。
+うまく読めない場合は、その TX/RX ログ（特に認証/読み取りの SW 応答）を見て調整します。
+`createWebUsbReader({ debug: true })`（既定 true）でログが出ます。
+
+### RC-S380（未実装）
+
+Port-100 の生 WebUSB で crypto1 が可能かは確証がなく（成功例は PC/SC ドライバ経由のみ）、
+`authenticateSeam` / `readBlockSeam` は未実装で既定ではエラーになります。実装時は
+`createWebUsbReader({ enableUnvalidatedSectorAuth: true })` とし、実機ログで SEAM を埋めます
+（デバイス接続・Type A 有効化・UID 取得は実装済み）。
+
+参考:
+- [support mifare classic 1k · nfcpy #133](https://github.com/nfcpy/nfcpy/issues/133)
+- [Pasori RC-S380でMifare Classic読み取りでハマる](https://ameblo.jp/waka21/entry-12237868842.html)
+- [PaSoRi RC-S380対応 FeliCa+Mifareアクセスライブラリ](https://lnovel.diary.to/archives/65827630.html)
 
 参考:
 - [support mifare classic 1k · nfcpy #133](https://github.com/nfcpy/nfcpy/issues/133)

@@ -4,11 +4,12 @@
 
 ## 未完了・保留
 
-- **実機(WebUSB)での MIFARE Classic セクタ読み取りは未実装**: `student_id` モードは
-  現在オフライン(ダンプ)でのみ動作する。実機対応は crypto1 認証の実機検証が前提。
-  経緯と方針は [card-reading.md](card-reading.md)「実機対応の現状」を参照。
-- **`/card-image` は個人情報(学籍番号)を含むダンプをそのまま返す**: 必ず
-  `run_host = '127.0.0.1'`（既定）で、共有ネットワークでは `offline_dump` を使わない。
+- **実機(WebUSB) RC-S300 のセクタ読み取りは第一版・実機検証中**: PC/SC 風疑似APDU
+  (FF 82/86/B0) で実装済みだが未検証。TX/RX ログを見て調整する段階。RC-S380 は未実装。
+  詳細は [card-reading.md](card-reading.md)「実機でのセクタ読み取り (crypto1)」。
+- **`/card-image`・`/keys` は個人情報/秘密情報を返す**: `/card-image` は学籍番号を含む
+  ダンプ、`/keys` は鍵を返す。必ず `run_host = '127.0.0.1'`（既定）で、共有ネットワークでは
+  使わない。いずれも `read_mode = 'student_id'` のときのみ有効。
 
 ## 運用上の注意
 

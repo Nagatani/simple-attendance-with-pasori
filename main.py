@@ -48,6 +48,29 @@ def get_config():
   })
 
 
+@app.route("/keys")
+def get_keys():
+  """実機でのセクタ認証(crypto1)用に、keys_file の候補鍵をブラウザへ返す。
+  read_mode が 'student_id' のときのみ。鍵は秘密情報のため 127.0.0.1 専用の想定。"""
+  if getattr(config, "read_mode", "uid") != "student_id":
+    abort(404)
+  path = getattr(config, "keys_file", None)
+  if not path or not os.path.exists(path):
+    return jsonify({"status": "error", "keys": [], "message": "keys_file が見つかりません: {}".format(path)}), 404
+
+  keys = []
+  seen = set()
+  with open(path, "r", encoding="utf-8", errors="ignore") as f:
+    for raw in f:
+      line = raw.split("#")[0].strip().replace(":", "").replace(" ", "")
+      if len(line) == 12 and all(c in "0123456789abcdefABCDEF" for c in line):
+        low = line.lower()
+        if low not in seen:
+          seen.add(low)
+          keys.append(low)
+  return jsonify({"status": "ok", "keys": keys})
+
+
 @app.route("/card-image")
 def card_image():
   """オフライン(デモ)用に、設定された .mfd ダンプを「読み取ったカード」として返す。

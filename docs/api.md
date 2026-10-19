@@ -16,6 +16,17 @@
 {"read_mode": "student_id", "student_id_location": {"sector": 1, "block": 0, "offset": 0, "length": 8, "encoding": "ascii", "validate": ""}, "offline": true}
 ```
 
+## `GET /keys`
+
+実機のセクタ認証(crypto1)用に、`config.keys_file` の候補鍵を返します。`read_mode` が
+`student_id` のときのみ（それ以外は 404）。鍵は秘密情報のため 127.0.0.1 専用の想定です。
+
+```json
+{"status": "ok", "keys": ["ffffffffffff", "a0a1a2a3a4a5"]}
+```
+
+各要素は 12 桁 16 進（小文字）。コメント(`#`)・空行・12桁16進以外は除外、重複は排除。
+
 ## `GET /card-image`
 
 オフライン(デモ)用に、`config.offline_dump` の .mfd を「読み取ったカード」として返します。`offline_dump` が未設定なら 404。個人情報を含むため 127.0.0.1 専用の想定です。

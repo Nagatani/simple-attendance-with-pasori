@@ -25,6 +25,23 @@ const loadAppConfig = async () => {
   return appConfig;
 };
 
+let candidateKeys = null;
+
+/** 実機のセクタ認証用に /keys から候補鍵を取得してキャッシュ（byte 配列の配列）。 */
+const loadKeys = async () => {
+  if (candidateKeys) { return candidateKeys; }
+  try {
+    const res = await fetch('/keys');
+    const data = res.ok ? await res.json() : { keys: [] };
+    candidateKeys = (data.keys || []).map((hex) => MifareWebUSB.hexToKey(hex));
+  } catch (e) {
+    console.warn('鍵(/keys)の取得に失敗。既定鍵のみで試行します:', e);
+    candidateKeys = [];
+  }
+  if (candidateKeys.length === 0) { candidateKeys = [MifareWebUSB.DEFAULT_KEY]; }
+  return candidateKeys;
+};
+
 /** サーバの student_id_location 設定を studentId 用の location に変換（validate を RegExp 化）。 */
 const locationFromConfig = (loc) => {
   const out = {
@@ -50,11 +67,12 @@ const attendFromTransceiver = async (transceiver, card = {}) => {
     throw new Error('student_id_location が設定されていません（config.py を確認してください）。');
   }
 
-  const { image, readSectors, errors } = await MifareWebUSB.readAllSectors(transceiver, {
-    uid: card.uid || [],
-    // 実機の crypto1 認証を実装する際は、ここに keyProvider（サーバから取得した
-    // 候補鍵）を渡す必要がある。webusb-reader.js の SEAM 実装とセットで対応。
-  });
+  const readOptions = { uid: card.uid || [] };
+  if (!cfg.offline) {
+    // 実機モードはセクタ認証に実鍵が要る（オフラインはダンプから直読みのため不要）。
+    readOptions.keyProvider = MifareWebUSB.keyProviderFromCandidates(await loadKeys());
+  }
+  const { image, readSectors, errors } = await MifareWebUSB.readAllSectors(transceiver, readOptions);
   if (readSectors.length === 0) {
     updateHeadingMessage(`セクタを読み取れませんでした: ${errors.map((e) => e.message).join(' / ')}`);
     return;
