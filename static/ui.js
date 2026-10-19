@@ -112,6 +112,29 @@ const focusStudentIdInRegisterDialog = () => {
   }
 };
 
+const registerDialogMessage = document.getElementById('dialogMessage');
+const registerDialogDefaultMessage = registerDialogMessage ? registerDialogMessage.textContent : '';
+
+/**
+ * 新規登録エラー時、ダイアログにメッセージを表示し、学籍番号入力欄にフォーカスします。
+ * @param {string} message 表示するエラーメッセージ
+ */
+const showRegisterErrorMessageAndFocus = (message) => {
+  if (registerDialogMessage && message) {
+    registerDialogMessage.textContent = message;
+  }
+  focusStudentIdInRegisterDialog();
+};
+
+/**
+ * 新規登録ダイアログのメッセージを初期状態に戻します。
+ */
+const resetRegisterDialogMessage = () => {
+  if (registerDialogMessage) {
+    registerDialogMessage.textContent = registerDialogDefaultMessage;
+  }
+};
+
 
 /**
  * カード忘れダイアログを表示します。

@@ -43,12 +43,7 @@ const register = (card_id, student_id) => {
     .then(data => {
       // console.log('register API success:', data); // 削除
       if (data.status === 'error') {
-        focusStudentIdInRegisterDialog(); // おそらくエラーメッセージはサーバーから返る想定
-                                          // 必要であれば ui.js に data.message を渡して表示
-        if (data.message) {
-            // 例: showErrorInRegisterDialog(data.message); のような関数をui.jsに作る
-            // console.log("Register API error message:", data.message); // 削除
-        }
+        showRegisterErrorMessageAndFocus(data.message);
       } else {
         closeRegisterDialogAndClearStudentId();
         processNewAttend(data.student_id, true);
@@ -222,6 +217,7 @@ const favDialogElement = document.getElementById('favDialog');
 if (favDialogElement) {
   favDialogElement.addEventListener('close', () => {
     // console.log('Registration dialog (favDialog) closed.'); // 削除
+    resetRegisterDialogMessage();
     if (typeof clearBeforeIdm === 'function') {
       clearBeforeIdm(); // felica.jsの関数を呼び出す
       console.info('登録ダイアログが閉じられました。FeliCaキャッシュ (beforeIdm) をクリアしました。');
