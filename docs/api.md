@@ -8,6 +8,24 @@
 
 出席登録画面 (`templates/index.html`) を返します。テンプレート変数は `section_title`, `section_id`。
 
+## `GET /config`
+
+ブラウザ側のカード読み取りパイプラインが必要とする設定を返します。鍵などの秘密情報は含みません。
+
+```json
+{"read_mode": "student_id", "student_id_location": {"sector": 1, "block": 0, "offset": 0, "length": 8, "encoding": "ascii", "validate": ""}, "offline": true}
+```
+
+## `GET /card-image`
+
+オフライン(デモ)用に、`config.offline_dump` の .mfd を「読み取ったカード」として返します。`offline_dump` が未設定なら 404。個人情報を含むため 127.0.0.1 専用の想定です。
+
+```json
+{"status": "ok", "uid": "26fa40a6", "image": [38, 250, ...]}
+```
+
+`image` は 1024 バイトの配列（MIFARE Classic 1K の全ブロック）。
+
 ## `GET /get-attended`
 
 この回の出席者一覧。
@@ -26,7 +44,18 @@
 
 | パラメータ | 必須 | 説明 |
 |---|---|---|
-| `card_id` | ○ | カード ID（16 進文字列。大文字小文字は区別しない） |
+| `student_id` | △ | カードから読み取った学籍番号。指定時はこの学籍番号で直接出席登録する（`student_id` モード） |
+| `card_id` | △ | カード ID（16 進文字列。大文字小文字は区別しない）。`student_id` 指定時は attendance.card_id に入れる任意の値 |
+
+`student_id` を指定した場合（カード内学籍番号モード）:
+
+- `card_id` があればそれを、無ければ `student_id` を attendance.card_id のキーとして
+  INSERT（既にあれば `update_datetime` を更新）。常に `status: ok` を返す。
+  ```json
+  {"status": "ok", "student_id": "K2100001", "message": "出席登録完了しました: K2100001"}
+  ```
+
+`student_id` を指定しない場合（従来の UID モード、`card_id` 必須）:
 
 - 登録済みカード: その回の `attendance` を INSERT（既にあれば `update_datetime` を更新）。
   ```json

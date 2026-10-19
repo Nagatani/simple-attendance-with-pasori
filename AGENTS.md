@@ -24,12 +24,19 @@ static/
   api.js           fetch ラッパーと各 API 呼び出し関数
   ui.js            DOM 操作・効果音再生などの表示系関数
   append.js        アプリロジック。felica.js のコールバックを受けて api.js / ui.js を呼ぶ
+  mifareClassic.js MIFARE Classic 1K の全セクタ読み取り手順 (transceiver を注入)
+  studentId.js     ブロックイメージの指定場所から学籍番号を抽出
+  mifareReader.js  transceiver 生成 (オフライン=ダンプ / 実機=WebUSB)
+  cardStudentId.js student_id モードのパイプライン (読み取り→抽出→/attend)
   custom.css       UIkit 風のクラス (uk-*) を自前実装した CSS (UIkit 本体は使っていない)
   pi.mp3, sound.mp3  読み取り音 / 出席登録音
+tools/
+  inspect_dump.py  .mfd ダンプを調べ学籍番号の場所を特定する (ローカル専用)
+tests/             static/*.js の単体テスト (node:test, 依存追加なし)
 docs/              設計ドキュメント
 ```
 
-`secrets/`・`*.db`・`*.xlsx` は `.gitignore` 対象です。`secrets/` には実カードのダンプが入っている場合があるため、**読み取り・コミット・外部送信をしないでください**。`attend.db` も実在の学生データなので同様に扱います。
+`secrets/`・`*.db`・`*.xlsx` は `.gitignore` 対象です。`secrets/` には実カードのダンプ(.mfd)と鍵(.keys)が入っており、**学籍番号などの個人情報・秘密情報を含みます**。**読み取り・コミット・外部送信をしないでください**（ダンプ内の学籍番号の場所は `tools/inspect_dump.py` を使って利用者自身が特定する）。`attend.db` も実在の学生データなので同様に扱います。
 
 ## 開発環境とコマンド
 
@@ -45,19 +52,26 @@ pipenv run export <第n回>           # Attend_<n>.xlsx を出力
 pipenv run export                   # 省略 (または 0) で全回を 1 ブックにまとめて Attend_all.xlsx を出力
 ```
 
-テスト・リンター・ビルド工程はありません。変更後は Python 側は `python -m py_compile main.py output_excel.py` 程度、フロントは実機 (PaSoRi + カード) かブラウザの DevTools で確認します。実機がない場合、`/attend` などの API は `curl -F card_id=XXXX http://127.0.0.1:8000/attend` で直接叩けます。
+JS ライブラリ (`static/mifareClassic.js`, `static/studentId.js`) には単体テストがあります（依存追加なし）。
+
+```sh
+node --test 'tests/*.test.js'
+```
+
+Python 側のリンター・ビルド工程はありません。変更後は `python -m py_compile main.py output_excel.py` 程度、フロントは実機 (PaSoRi + カード) かブラウザの DevTools で確認します。実機がない場合、`/attend` などの API は `curl -F card_id=XXXX http://127.0.0.1:8000/attend` で直接叩けます。`student_id` モードは `config.offline_dump` にダンプを設定すればオフラインで一通り動かせます（[docs/card-reading.md](docs/card-reading.md)）。
 
 ## アーキテクチャの要点
 
 詳細は [docs/architecture.md](docs/architecture.md)。
 
-- スクリプトは `<script defer>` で `ui.js → api.js → felica.js → append.js` の順に読み込まれ、**ES Modules ではなくグローバル関数で連携**している。読み込み順を変えると未定義参照になる。
+- スクリプトは `<script defer>` で `ui.js → api.js → felica.js → mifareClassic.js → studentId.js → mifareReader.js → append.js → cardStudentId.js` の順に読み込まれ、**ES Modules ではなくグローバル関数で連携**している（各ファイル末尾の `module.exports` は Node テスト用で、ブラウザでは無視される）。読み込み順を変えると未定義参照になる。
 - `felica.js` は DOM を直接触らず、`ui.js` の関数 (`displayFelicaMessage`, `playReadSound` など) を呼ぶ。カード検出時は `setCardReadCallback` で登録された `append.js` の `handleCardRead` を呼ぶ。
 - 同じカードの連続読み取りは `felica.js` の `beforeIdm` で抑止。登録ダイアログを閉じると `clearBeforeIdm()` でリセットされる。
 - RC-S300 接続時は `send` / `session` を `send300` / `session300` に差し替える（そのため `send` と `session` は `let` 宣言）。
 - サーバー側の講義回 (`section_id`) は argparse のグローバル `args` から参照している。1 プロセス = 1 講義回。
+- カード読み取りは 2 モード (`config.read_mode`)。`uid`=従来の UID 方式、`student_id`=カード内の学籍番号を読む方式。後者のデータ流れ（transceiver→`mcReadAllSectors`→`extractStudentId`→`/attend`）と実機対応の現状は [docs/card-reading.md](docs/card-reading.md)。
 
-API 仕様は [docs/api.md](docs/api.md)、DB スキーマは [docs/database.md](docs/database.md)。
+API 仕様は [docs/api.md](docs/api.md)、DB スキーマは [docs/database.md](docs/database.md)、カード読み取りは [docs/card-reading.md](docs/card-reading.md)。
 
 ## コーディング規約
 

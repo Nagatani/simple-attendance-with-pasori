@@ -66,8 +66,32 @@ $ pipenv run export 1
 | `run_debug` | `False` | Flask のデバッグモード（デバッガ・自動リロード） |
 | `database_name` | `"attend.db"` | SQLite ファイル |
 | `init_tables` | `False` | `True` で起動すると**テーブルを削除して作り直す**（全データ消去） |
+| `read_mode` | `'student_id'` | `'uid'`=カードUIDで登録（従来） / `'student_id'`=カード内の学籍番号を読んで登録 |
+| `student_id_location` | — | 学籍番号の格納場所（セクタ/ブロック/オフセット/長さ/形式）。`tools/inspect_dump.py` で特定して設定 |
+| `keys_file` | `secrets/*.keys` | MIFARE Classic の鍵ファイル（実機でのセクタ認証に使用） |
+| `offline_dump` | `secrets/*.mfd` | オフライン（実機なし）動作確認用のダンプ。`None` で実機モード |
 
-## workflow
+## カード内の学籍番号で出席登録する (`read_mode = 'student_id'`)
+
+学生証の MIFARE Classic セクタに書かれた学籍番号を直接読み取って登録するモードです。
+事前のカード登録は不要になります。設計・手順の詳細は [docs/card-reading.md](docs/card-reading.md)。
+
+```sh
+# 1. ダンプを調べて学籍番号の場所を特定し、config.py の student_id_location に設定
+python3 tools/inspect_dump.py secrets/Dump_XXXXXXXX.mfd
+
+# 2. 起動して「カードから学籍番号を読み取る」ボタンで登録
+pipenv run start 講義名 1
+```
+
+> **現状**: 実機(WebUSB)での MIFARE Classic セクタ認証(crypto1)は未実装で、今は
+> `offline_dump` を使ったオフライン動作のみ対応しています。経緯は
+> [docs/card-reading.md](docs/card-reading.md) を参照してください。
+>
+> ダンプ(.mfd)・鍵(.keys) は学籍番号などの個人情報・秘密情報を含みます。`secrets/`
+> に置き、コミットや外部送信をしないでください。
+
+## workflow（従来の `uid` モード）
 
 1. 初回講義で学生証のNFC（mifare classicで検証）を読み取らせる
 1. データベース上に生徒情報が存在しないので、学籍番号の入力を求めるダイアログが表示されます
@@ -80,6 +104,7 @@ $ pipenv run export 1
 
 - [AGENTS.md](AGENTS.md) — 開発者 / AI エージェント向けガイド
 - [docs/architecture.md](docs/architecture.md) — 構成とカード読み取りの流れ
+- [docs/card-reading.md](docs/card-reading.md) — カード内学籍番号の読み取り設計・手順・実機対応の現状
 - [docs/api.md](docs/api.md) — HTTP API 仕様
 - [docs/database.md](docs/database.md) — DB スキーマ
 - [docs/known-issues.md](docs/known-issues.md) — 既知の問題・運用上の注意

@@ -27,7 +27,8 @@
 - 起動引数 `section_title`（講義名）と `section_id`（第 n 回、整数）を受け取り、モジュールグローバルの `args` に保持する。全 API はこの `section_id` に対して動作する。
 - `__main__` で DB テーブルとインデックスを `create if not exists` で作成してから `app.run()` で起動する。
 - DB 接続はリクエストごとに `flask.g` にキャッシュし、`teardown_appcontext` で閉じる。
-- 設定値は `config.py`（`run_port`, `run_host`, `run_debug`, `database_name`, `init_tables`）。
+- 設定値は `config.py`（`run_port`, `run_host`, `run_debug`, `database_name`, `init_tables`, および `read_mode` / `student_id_location` / `keys_file` / `offline_dump`）。
+- `/config` は非秘密の設定（`read_mode`, `student_id_location`, `offline`）をブラウザに返す。`/card-image` はオフライン用にダンプ(.mfd)を返す。詳細は [card-reading.md](card-reading.md)。
 
 ## フロントエンド
 
@@ -38,7 +39,13 @@
 | 1 | `ui.js` | DOM 操作・効果音再生。状態は持たない |
 | 2 | `api.js` | `fetchApi` と `callAttendApi` / `callRegisterApi` / `callGetAttendedApi` / `callForgotCardApi` |
 | 3 | `felica.js` | WebUSB でのリーダー制御、ポーリングループ、重複読み取り抑止 (`beforeIdm`) |
-| 4 | `append.js` | アプリロジック。画面表示中の出席者リスト `students` を保持し、初回に `showAllAttendance()` を実行 |
+| 4 | `mifareClassic.js` | MIFARE Classic 1K の全セクタ読み取り手順（transceiver を注入） |
+| 5 | `studentId.js` | ブロックイメージの指定場所から学籍番号を抽出 |
+| 6 | `mifareReader.js` | transceiver 生成（オフライン=ダンプ / 実機=WebUSB） |
+| 7 | `append.js` | アプリロジック。画面表示中の出席者リスト `students` を保持し、初回に `showAllAttendance()` を実行 |
+| 8 | `cardStudentId.js` | `student_id` モードのパイプライン（読み取り→抽出→/attend） |
+
+カード読み取りには 2 モードある（`config.read_mode`）。`uid` は下記の従来フロー、`student_id` はカード内の学籍番号を読む新フロー。詳細は [card-reading.md](card-reading.md)。
 
 ### カード読み取りの流れ
 
