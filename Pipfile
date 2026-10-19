@@ -6,6 +6,9 @@ name = "pypi"
 [packages]
 flask = "*"
 openpyxl = "*"
+# pyscard は read_mode='pcsc'（サーバー側 PC/SC 読み取り）でのみ必要な任意依存。
+# 使う場合のみ `pipenv install pyscard` で追加する（コードは遅延 import する）。
+# pyscard = "*"
 
 [dev-packages]
 
