@@ -163,14 +163,14 @@ def register_forgot():
         "message": "student_id is empty."
       })
 
-    cur.execute("select card_id from students where student_id = ?", (student_id, ))
+    cur.execute("select card_id from students where student_id = ? COLLATE NOCASE", (student_id, ))
     student = cur.fetchone()
     if student == None:
       card_id = student_id # カード忘れの場合、かつ未登録学生の場合はカードIDは学籍番号と同じとする
     else:
       card_id = student[0]
 
-    cur.execute("select student_id from attendance where section_id = ? and card_id = ?", (args.section_id, card_id, ))
+    cur.execute("select student_id from attendance where section_id = ? COLLATE NOCASE and card_id = ? COLLATE NOCASE", (args.section_id, card_id, ))
     attend = cur.fetchone()
     if attend == None:
       cur.execute("insert into attendance (section_id, card_id, student_id, forgot_card) values (?, ?, ?, 'FORGOT')", (args.section_id, card_id, student_id, ))
