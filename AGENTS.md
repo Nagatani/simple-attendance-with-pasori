@@ -16,7 +16,7 @@ Sony PaSoRi (RC-S380 / RC-S300) で学生証の IC カード (FeliCa / MIFARE) �
 ```
 main.py            Flask アプリ本体。起動時に DB テーブルを作成し、API を提供
 output_excel.py    attendance テーブルを Excel に書き出す CLI
-config.py          ポート / ホスト / DB ファイル名 / テーブル初期化フラグ
+config.py          ポート / ホスト / デバッグ / DB ファイル名 / テーブル初期化フラグ
 templates/
   index.html       唯一の画面 (Jinja2)。ダイアログ 2 つと効果音 <audio> を含む
 static/

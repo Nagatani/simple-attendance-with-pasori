@@ -233,4 +233,4 @@ if __name__ == '__main__':
   # Flaskの起動
   app.run(port=config.run_port,
           host=config.run_host,
-          debug=True)
+          debug=config.run_debug)

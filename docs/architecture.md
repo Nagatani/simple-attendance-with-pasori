@@ -25,9 +25,9 @@
 ## サーバー (main.py)
 
 - 起動引数 `section_title`（講義名）と `section_id`（第 n 回、整数）を受け取り、モジュールグローバルの `args` に保持する。全 API はこの `section_id` に対して動作する。
-- `__main__` で DB テーブルとインデックスを `create if not exists` で作成してから `app.run(debug=True)` で起動する。
+- `__main__` で DB テーブルとインデックスを `create if not exists` で作成してから `app.run()` で起動する。
 - DB 接続はリクエストごとに `flask.g` にキャッシュし、`teardown_appcontext` で閉じる。
-- 設定値は `config.py`（`run_port`, `run_host`, `database_name`, `init_tables`）。
+- 設定値は `config.py`（`run_port`, `run_host`, `run_debug`, `database_name`, `init_tables`）。
 
 ## フロントエンド
 
