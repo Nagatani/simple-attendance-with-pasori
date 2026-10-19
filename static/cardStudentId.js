@@ -1,17 +1,15 @@
-// カード内（MIFARE Classic のセクタ）に書かれた学籍番号を読み取って
-// 出席登録するフロー。各ライブラリを束ねる。
+// カード内（MIFARE Classic のセクタ）の学籍番号を読み取って出席登録する
+// アプリ側グルー。読み取りロジックは mifare-webusb ライブラリ(MifareWebUSB)に
+// 委譲し、このファイルはアプリ固有の処理だけを持つ:
+//   - サーバ設定 /config の取得
+//   - オフライン時の /card-image 取得
+//   - DOM ボタン配線と /attend 呼び出し、UI 更新(ui.js/append.js)
 //
-//   mifareReader.js (transceiver) → mifareClassic.js (全セクタ読み取り)
-//   → studentId.js (学籍番号抽出) → /attend (出席登録)
-//
-// read_mode が 'student_id' のときに index.html のボタンから呼ばれる。
+// read_mode が 'student_id' のときだけ動作する。
 
 let appConfig = null;
 
-/**
- * サーバから設定(/config)を取得してキャッシュします。
- * @returns {Promise<object>}
- */
+/** サーバ設定(/config)を取得してキャッシュ。 */
 const loadAppConfig = async () => {
   if (appConfig) { return appConfig; }
   const res = await fetch('/config');
@@ -20,12 +18,7 @@ const loadAppConfig = async () => {
   return appConfig;
 };
 
-/**
- * サーバの student_id_location 設定を studentId.js 用の location に変換します。
- * validate は文字列の正規表現なので RegExp に変換します。
- * @param {object} loc
- * @returns {object}
- */
+/** サーバの student_id_location 設定を studentId 用の location に変換（validate を RegExp 化）。 */
 const locationFromConfig = (loc) => {
   const out = {
     sector: loc.sector,
@@ -34,15 +27,43 @@ const locationFromConfig = (loc) => {
     length: loc.length,
     encoding: loc.encoding || 'ascii',
   };
-  if (loc.validate) {
-    out.validate = new RegExp(loc.validate);
-  }
+  if (loc.validate) { out.validate = new RegExp(loc.validate); }
   return out;
 };
 
 /**
- * カードから全セクタを読み取り、設定された場所の学籍番号を取り出します。
- * @returns {Promise<{studentId: string, uid: string, readSectors: number[], errors: Array}>}
+ * オフライン(デモ)リーダー: サーバの /card-image のダンプから
+ * ライブラリのイメージ transceiver を作る。
+ * @returns {Promise<{uidHex: string, transceiver: object}>}
+ */
+const createOfflineReader = async () => {
+  const res = await fetch('/card-image');
+  if (!res.ok) {
+    throw new Error('カードイメージを取得できませんでした。config.offline_dump を確認してください。');
+  }
+  const data = await res.json();
+  if (!data || !Array.isArray(data.image)) {
+    throw new Error('カードイメージの形式が不正です。');
+  }
+  const image = Uint8Array.from(data.image);
+  return { uidHex: data.uid || '', transceiver: MifareWebUSB.createImageTransceiver(image) };
+};
+
+/**
+ * 実機(WebUSB)リーダー: ライブラリの WebUSB リーダーを接続して transceiver を得る。
+ * ※ connect() はユーザー操作(クリック)内で呼ぶ必要がある。
+ * @returns {Promise<{uidHex: string, transceiver: object}>}
+ */
+const createLiveReader = async () => {
+  const reader = MifareWebUSB.createWebUsbReader();
+  await reader.connect();
+  const polled = await reader.pollUid();
+  return { uidHex: polled ? polled.uidHex : '', transceiver: reader.transceiver };
+};
+
+/**
+ * カードから全セクタを読み取り、設定場所の学籍番号を取り出す。
+ * @returns {Promise<{studentId: string, uidHex: string, readSectors: number[], errors: Array}>}
  */
 const readStudentIdFromCard = async () => {
   const cfg = await loadAppConfig();
@@ -51,31 +72,25 @@ const readStudentIdFromCard = async () => {
     throw new Error('student_id_location が設定されていません（config.py を確認してください）。');
   }
 
-  const reader = cfg.offline ? await createOfflineReader() : createWebUsbReader();
-  const { image, readSectors, errors } = await mcReadAllSectors(reader.transceiver);
+  const reader = cfg.offline ? await createOfflineReader() : await createLiveReader();
+  const { image, readSectors, errors } = await MifareWebUSB.readAllSectors(reader.transceiver);
   if (readSectors.length === 0) {
-    const detail = errors.map((e) => e.message).join(' / ');
-    throw new Error(`セクタを読み取れませんでした。${detail}`);
+    throw new Error(`セクタを読み取れませんでした。${errors.map((e) => e.message).join(' / ')}`);
   }
 
-  const studentId = extractStudentId(image, locationFromConfig(loc));
-  return { studentId, uid: reader.uid, readSectors, errors };
+  const studentId = MifareWebUSB.extractString(image, locationFromConfig(loc));
+  return { studentId, uidHex: reader.uidHex, readSectors, errors };
 };
 
-/**
- * カードから学籍番号を読み取り、そのまま出席登録します。
- * UI 表示は ui.js / append.js の関数を利用します。
- */
+/** カードから学籍番号を読み取り、そのまま出席登録する。 */
 const readAndAttendStudentId = async () => {
   try {
-    const { studentId, uid, errors } = await readStudentIdFromCard();
-    if (errors && errors.length) {
-      console.warn('一部セクタの読み取りに失敗:', errors);
-    }
+    const { studentId, uidHex, errors } = await readStudentIdFromCard();
+    if (errors && errors.length) { console.warn('一部セクタの読み取りに失敗:', errors); }
     console.info(`カードから学籍番号を読み取りました: ${studentId}`);
     if (typeof playReadSound === 'function') { playReadSound(); }
 
-    const data = await fetchApi('/attend', 'POST', { student_id: studentId, card_id: uid || '' });
+    const data = await fetchApi('/attend', 'POST', { student_id: studentId, card_id: uidHex || '' });
     if (data.status === 'ok') {
       processNewAttend(data.student_id, true);
     } else {
@@ -99,7 +114,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         ev.preventDefault();
         readAndAttendStudentId();
       });
-      // 学籍番号モードでは従来のUID用SETUPボタンは不要なので隠す。
       const setupButton = document.getElementById('start');
       if (setupButton) { setupButton.style.display = 'none'; }
     }

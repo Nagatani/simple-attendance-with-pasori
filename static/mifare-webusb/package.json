@@ -1,0 +1,20 @@
+{
+  "name": "mifare-webusb",
+  "version": "0.1.0",
+  "description": "WebUSB で Sony PaSoRi (RC-S380/RC-S300) から MIFARE Classic 1K を読み取るライブラリ。リーダー通信を transceiver として抽象化し、全セクタ読み取りと値抽出を提供する。",
+  "main": "index.js",
+  "type": "commonjs",
+  "files": [
+    "index.js",
+    "mifare-classic.js",
+    "webusb-reader.js",
+    "student-id.js",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test '../../tests/*.test.js'"
+  },
+  "keywords": ["webusb", "mifare", "mifare-classic", "nfc", "pasori", "rc-s380", "rc-s300"],
+  "license": "MIT",
+  "dependencies": {}
+}

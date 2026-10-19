@@ -7,38 +7,42 @@
 | `uid`（既定） | カードの UID/IDm を `card_id` として出席登録する従来方式。未登録カードは学籍番号の手入力ダイアログが出る。 | 必要（初回に UID↔学籍番号を登録） |
 | `student_id` | カード内（MIFARE Classic のセクタ）に書かれた学籍番号を読み取り、そのまま出席登録する。 | 不要 |
 
-`uid` モードでは `student_id` 用の機能は一切動きません（`/card-image` は 404、`/config` も学籍番号の場所を返さない）。`mifareClassic.js` / `studentId.js` / `cardStudentId.js` は読み込まれますが、ボタンが無効なので待機するだけです。
+`uid` モードでは `student_id` 用の機能は一切動きません（`/card-image` は 404、`/config` も学籍番号の場所を返さない）。`mifare-webusb/*` と `cardStudentId.js` は読み込まれますが、ボタンが無効なので待機するだけです。
 
 ## `student_id` モードの構成
 
-関連ファイルと役割:
+カード読み取り自体は独立ライブラリ **`static/mifare-webusb/`**（`window.MifareWebUSB`）に
+切り出してあります（フォルダごと外に出せる。詳細は
+[static/mifare-webusb/README.md](../static/mifare-webusb/README.md)）。アプリ側は
+これを利用するだけです。
 
-```
-static/mifareReader.js   transceiver(リーダー固有の低レベル実装)を生成
-static/mifareClassic.js  全セクタを認証・読み取りして1024バイトイメージに組み立てる
-static/studentId.js      イメージの指定場所から学籍番号を取り出す
-static/cardStudentId.js  上記を束ね、読み取り→抽出→/attend まで実行
-tools/inspect_dump.py    ダンプを調べて学籍番号の格納場所を特定する（ローカル専用）
-```
+| ファイル | 役割 | 区分 |
+|---|---|---|
+| `static/mifare-webusb/mifare-classic.js` | 全セクタ読み取り `readAllSectors()`・鍵・イメージ transceiver | ライブラリ |
+| `static/mifare-webusb/webusb-reader.js` | PaSoRi を WebUSB 制御し transceiver を提供 | ライブラリ |
+| `static/mifare-webusb/student-id.js` | イメージの指定場所から値を抽出 `extractString()` | ライブラリ |
+| `static/cardStudentId.js` | 上記を束ね、/config・/card-image・/attend と UI を繋ぐ | アプリ |
+| `tools/inspect_dump.py` | ダンプを調べて学籍番号の格納場所を特定（ローカル専用） | ツール |
 
 データの流れ:
 
 ```
-transceiver ──▶ mcReadAllSectors() ──▶ 1024バイトイメージ ──▶ extractStudentId() ──▶ /attend
- (リーダー)        (mifareClassic.js)                           (studentId.js)
+transceiver ──▶ readAllSectors() ──▶ 1024バイトイメージ ──▶ extractString() ──▶ /attend
+ (リーダー)       (mifare-webusb)                           (mifare-webusb)       (アプリ)
 ```
 
-`mcReadAllSectors()` は「どのセクタをどの鍵で認証し、どのブロックを読むか」という
+`readAllSectors()` は「どのセクタをどの鍵で認証し、どのブロックを読むか」という
 手順だけを持ち、実際の通信は transceiver に委譲します。これにより手順部分は
-ハードウェア無しで単体テストできます（`tests/mifareClassic.test.js`）。
+ハードウェア無しで単体テストできます（`tests/mifare-classic.test.js`）。
 
 ## 2 つの transceiver
 
-- **オフライン(デモ)**: `createOfflineReader()`。サーバの `/card-image` が返す
-  ダンプ(`config.offline_dump` の .mfd)を「読み取ったカード」として扱います。
-  実機が無くても出席登録フロー全体を検証できます。鍵照合はしません。
-- **実機(WebUSB)**: `createWebUsbReader()`。**現時点では未実装**で、呼ぶと明示的に
-  エラーを返します。理由は下記「実機対応の現状」を参照。
+- **オフライン(デモ)**: アプリが `/card-image`（`config.offline_dump` の .mfd）を取得し、
+  ライブラリの `MifareWebUSB.createImageTransceiver(image)` に渡します。実機が無くても
+  出席登録フロー全体を検証できます。鍵照合はしません。
+- **実機(WebUSB)**: `MifareWebUSB.createWebUsbReader()`。接続・Type A 有効化・UID 取得は
+  実装済み。**crypto1 セクタ認証/読み取りは実機未検証**で、既定では明示エラーを返します
+  （下記「実機対応の現状」）。
 
 ## 学籍番号の格納場所を特定する
 
@@ -82,9 +86,11 @@ student_id_location = {
   Software が crypto1 を処理）で、本プロジェクトのような **生の WebUSB で crypto1 が
   できたという確証は見つかっていません**。Port-100 チップは crypto1 を内蔵しないと
   いう理解が一般的で、現行の UID 読み取りは認証不要なので動いています。
-- そのため `createWebUsbReader()` は未実装とし、実機とカードでの検証（console /
-  USB 通信ログ）が得られ次第、`felica.js` の低レベル処理を使って
-  `authenticate()` / `readBlock()` を実装する方針です。
+- そのため `webusb-reader.js` では crypto1 のセクタ認証/読み取りを SEAM
+  (`authenticateSeam` / `readBlockSeam`) として分離し、既定では明示エラーを投げます。
+  実機検証時は `createWebUsbReader({ enableUnvalidatedSectorAuth: true })` とし、
+  console / USB 通信ログで確認したコマンド列を SEAM 部に実装します
+  （デバイス接続・Type A 有効化・UID 取得は既に実装済み）。
 
 参考:
 - [support mifare classic 1k · nfcpy #133](https://github.com/nfcpy/nfcpy/issues/133)

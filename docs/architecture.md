@@ -39,11 +39,13 @@
 | 1 | `ui.js` | DOM 操作・効果音再生。状態は持たない |
 | 2 | `api.js` | `fetchApi` と `callAttendApi` / `callRegisterApi` / `callGetAttendedApi` / `callForgotCardApi` |
 | 3 | `felica.js` | WebUSB でのリーダー制御、ポーリングループ、重複読み取り抑止 (`beforeIdm`) |
-| 4 | `mifareClassic.js` | MIFARE Classic 1K の全セクタ読み取り手順（transceiver を注入） |
-| 5 | `studentId.js` | ブロックイメージの指定場所から学籍番号を抽出 |
-| 6 | `mifareReader.js` | transceiver 生成（オフライン=ダンプ / 実機=WebUSB） |
+| 4 | `mifare-webusb/mifare-classic.js` | ライブラリ: 全セクタ読み取り `readAllSectors()`・鍵・イメージ transceiver |
+| 5 | `mifare-webusb/webusb-reader.js` | ライブラリ: PaSoRi を WebUSB 制御し transceiver を提供 |
+| 6 | `mifare-webusb/student-id.js` | ライブラリ: イメージの指定場所から値を抽出 |
 | 7 | `append.js` | アプリロジック。画面表示中の出席者リスト `students` を保持し、初回に `showAllAttendance()` を実行 |
-| 8 | `cardStudentId.js` | `student_id` モードのパイプライン（読み取り→抽出→/attend） |
+| 8 | `cardStudentId.js` | `student_id` モードのパイプライン（ライブラリを束ね 読み取り→抽出→/attend） |
+
+`static/mifare-webusb/` は DOM/アプリ非依存の独立ライブラリ（`window.MifareWebUSB`）で、フォルダごと切り出せます（[README](../static/mifare-webusb/README.md)）。
 
 カード読み取りには 2 モードある（`config.read_mode`）。`uid` は下記の従来フロー、`student_id` はカード内の学籍番号を読む新フロー。詳細は [card-reading.md](card-reading.md)。
 

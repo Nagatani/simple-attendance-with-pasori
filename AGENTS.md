@@ -24,10 +24,12 @@ static/
   api.js           fetch ラッパーと各 API 呼び出し関数
   ui.js            DOM 操作・効果音再生などの表示系関数
   append.js        アプリロジック。felica.js のコールバックを受けて api.js / ui.js を呼ぶ
-  mifareClassic.js MIFARE Classic 1K の全セクタ読み取り手順 (transceiver を注入)
-  studentId.js     ブロックイメージの指定場所から学籍番号を抽出
-  mifareReader.js  transceiver 生成 (オフライン=ダンプ / 実機=WebUSB)
-  cardStudentId.js student_id モードのパイプライン (読み取り→抽出→/attend)
+  mifare-webusb/   独立ライブラリ (window.MifareWebUSB)。フォルダごと外に出せる
+    mifare-classic.js  全セクタ読み取り readAllSectors()・鍵・イメージ transceiver
+    webusb-reader.js   PaSoRi を WebUSB 制御し transceiver を提供 (crypto1 は SEAM/未検証)
+    student-id.js      イメージの指定場所から値を抽出 extractString()
+    package.json / README.md / index.js
+  cardStudentId.js student_id モードのアプリ側グルー (ライブラリ→/attend→UI)
   custom.css       UIkit 風のクラス (uk-*) を自前実装した CSS (UIkit 本体は使っていない)
   pi.mp3, sound.mp3  読み取り音 / 出席登録音
 tools/
@@ -52,7 +54,7 @@ pipenv run export <第n回>           # Attend_<n>.xlsx を出力
 pipenv run export                   # 省略 (または 0) で全回を 1 ブックにまとめて Attend_all.xlsx を出力
 ```
 
-JS ライブラリ (`static/mifareClassic.js`, `static/studentId.js`) には単体テストがあります（依存追加なし）。
+カード読み取りライブラリ `static/mifare-webusb/` には単体テストがあります（依存追加なし）。
 
 ```sh
 node --test 'tests/*.test.js'
@@ -64,12 +66,12 @@ Python 側のリンター・ビルド工程はありません。変更後は `py
 
 詳細は [docs/architecture.md](docs/architecture.md)。
 
-- スクリプトは `<script defer>` で `ui.js → api.js → felica.js → mifareClassic.js → studentId.js → mifareReader.js → append.js → cardStudentId.js` の順に読み込まれ、**ES Modules ではなくグローバル関数で連携**している（各ファイル末尾の `module.exports` は Node テスト用で、ブラウザでは無視される）。読み込み順を変えると未定義参照になる。
+- スクリプトは `<script defer>` で `ui.js → api.js → felica.js → mifare-webusb/{mifare-classic,webusb-reader,student-id}.js → append.js → cardStudentId.js` の順に読み込まれる。アプリ本体は **ES Modules ではなくグローバル関数で連携**。`mifare-webusb/*` は UMD で、ブラウザでは `window.MifareWebUSB` に集約され、Node では `require` できる（末尾の分岐で両対応）。読み込み順を変えると未定義参照になる。
 - `felica.js` は DOM を直接触らず、`ui.js` の関数 (`displayFelicaMessage`, `playReadSound` など) を呼ぶ。カード検出時は `setCardReadCallback` で登録された `append.js` の `handleCardRead` を呼ぶ。
 - 同じカードの連続読み取りは `felica.js` の `beforeIdm` で抑止。登録ダイアログを閉じると `clearBeforeIdm()` でリセットされる。
 - RC-S300 接続時は `send` / `session` を `send300` / `session300` に差し替える（そのため `send` と `session` は `let` 宣言）。
 - サーバー側の講義回 (`section_id`) は argparse のグローバル `args` から参照している。1 プロセス = 1 講義回。
-- カード読み取りは 2 モード (`config.read_mode`)。`uid`=従来の UID 方式、`student_id`=カード内の学籍番号を読む方式。後者のデータ流れ（transceiver→`mcReadAllSectors`→`extractStudentId`→`/attend`）と実機対応の現状は [docs/card-reading.md](docs/card-reading.md)。
+- カード読み取りは 2 モード (`config.read_mode`)。`uid`=従来の UID 方式、`student_id`=カード内の学籍番号を読む方式。後者のデータ流れ（transceiver→`readAllSectors`→`extractString`→`/attend`）と実機対応の現状は [docs/card-reading.md](docs/card-reading.md)。読み取り部は独立ライブラリ [static/mifare-webusb/README.md](static/mifare-webusb/README.md)。
 
 API 仕様は [docs/api.md](docs/api.md)、DB スキーマは [docs/database.md](docs/database.md)、カード読み取りは [docs/card-reading.md](docs/card-reading.md)。
 

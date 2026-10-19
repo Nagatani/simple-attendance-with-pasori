@@ -10,9 +10,10 @@
     <script src="{{ url_for('static', filename='ui.js') }}" defer></script>
     <script src="{{ url_for('static', filename='api.js') }}" defer></script>
     <script src="{{ url_for('static', filename='felica.js') }}" defer></script>
-    <script src="{{ url_for('static', filename='mifareClassic.js') }}" defer></script>
-    <script src="{{ url_for('static', filename='studentId.js') }}" defer></script>
-    <script src="{{ url_for('static', filename='mifareReader.js') }}" defer></script>
+    <!-- mifare-webusb ライブラリ（独立パッケージ。window.MifareWebUSB に公開） -->
+    <script src="{{ url_for('static', filename='mifare-webusb/mifare-classic.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='mifare-webusb/webusb-reader.js') }}" defer></script>
+    <script src="{{ url_for('static', filename='mifare-webusb/student-id.js') }}" defer></script>
     <script src="{{ url_for('static', filename='append.js') }}" defer></script>
     <script src="{{ url_for('static', filename='cardStudentId.js') }}" defer></script>
   </head>
