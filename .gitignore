@@ -4,6 +4,9 @@
 db_backups/
 **/*.db*
 
+# Ignore secrets directory
+secrets/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
