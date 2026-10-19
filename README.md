@@ -66,12 +66,15 @@ $ pipenv run export 1
 | `run_debug` | `False` | Flask のデバッグモード（デバッガ・自動リロード） |
 | `database_name` | `"attend.db"` | SQLite ファイル |
 | `init_tables` | `False` | `True` で起動すると**テーブルを削除して作り直す**（全データ消去） |
-| `read_mode` | `'student_id'` | `'uid'`=カードUIDで登録（従来） / `'student_id'`=カード内の学籍番号を読んで登録 |
+| `read_mode` | `'uid'` | **既定はシンプルな従来方式**。`'uid'`=カードUIDで登録 / `'student_id'`=カード内の学籍番号を読んで登録 |
 | `student_id_location` | — | 学籍番号の格納場所（セクタ/ブロック/オフセット/長さ/形式）。`tools/inspect_dump.py` で特定して設定 |
 | `keys_file` | `secrets/*.keys` | MIFARE Classic の鍵ファイル（実機でのセクタ認証に使用） |
 | `offline_dump` | `secrets/*.mfd` | オフライン（実機なし）動作確認用のダンプ。`None` で実機モード |
 
 ## カード内の学籍番号で出席登録する (`read_mode = 'student_id'`)
+
+> 既定は `read_mode = 'uid'`（上の workflow のシンプルな運用）です。このモードは
+> 任意で、`config.py` の `read_mode` を `'student_id'` に変えると有効になります。
 
 学生証の MIFARE Classic セクタに書かれた学籍番号を直接読み取って登録するモードです。
 事前のカード登録は不要になります。設計・手順の詳細は [docs/card-reading.md](docs/card-reading.md)。

@@ -38,17 +38,23 @@ def base():
 def get_config():
   """ブラウザ側のカード読み取りパイプラインが必要とする設定を返す。
   鍵(keys_file)などの秘密情報は含めない。"""
+  read_mode = getattr(config, "read_mode", "uid")
+  # student_id モードのときだけ学籍番号の場所・オフライン有無を返す。
+  is_student_id = read_mode == "student_id"
   return jsonify({
-    "read_mode": getattr(config, "read_mode", "uid"),
-    "student_id_location": getattr(config, "student_id_location", None),
-    "offline": bool(getattr(config, "offline_dump", None)),
+    "read_mode": read_mode,
+    "student_id_location": getattr(config, "student_id_location", None) if is_student_id else None,
+    "offline": bool(getattr(config, "offline_dump", None)) if is_student_id else False,
   })
 
 
 @app.route("/card-image")
 def card_image():
   """オフライン(デモ)用に、設定された .mfd ダンプを「読み取ったカード」として返す。
-  config.offline_dump が未設定なら 404。個人情報を含むため 127.0.0.1 専用の想定。"""
+  read_mode が 'student_id' かつ config.offline_dump 設定時のみ。それ以外は 404。
+  個人情報を含むため 127.0.0.1 専用の想定。"""
+  if getattr(config, "read_mode", "uid") != "student_id":
+    abort(404)
   dump_path = getattr(config, "offline_dump", None)
   if not dump_path:
     abort(404)
