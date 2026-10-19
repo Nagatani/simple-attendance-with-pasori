@@ -16,5 +16,4 @@
 - **WebUSB はセキュアコンテキスト必須**: `http://127.0.0.1:8000` または `http://localhost:8000` で開く。別 PC から IP アドレスで HTTP アクセスした場合はリーダーが使えない。
 - **`init_tables = True` は全データ削除**: [database.md](database.md) 参照。
 - **Python バージョン**: `Pipfile` は 3.11 指定。ローカルの `.python-version`（gitignore 対象）と異なる場合は `pipenv --python 3.11` などで合わせる。
-- **`nfcpy` は未使用**: `Pipfile` に記載があるがコードからは import されていない。
 - **画面上の出席済み判定は学籍番号ベース**: `append.js` の `students` 配列はページ読み込み時の出席者 + その後の登録で構成される。複数ブラウザで同時に使うと画面同士は同期しない。

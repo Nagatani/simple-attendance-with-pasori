@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "e5916a96d1e01a3876ab6b9b3f4bb8dac115737cf9bdb2abd7057bbadbf0c4fb"
+            "sha256": "2bca9af3d8827a700d951bcf5c9e85c766c7d9f94707d6feeadf4eea648774f6"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -64,15 +64,6 @@
             ],
             "markers": "python_version >= '3.7'",
             "version": "==3.1.4"
-        },
-        "libusb1": {
-            "hashes": [
-                "sha256:4ee9b0a55f8bd0b3ea7017ae919a6c1f439af742c4a4b04543c5fd7af89b828c",
-                "sha256:77a06ecfb3d002d7c2ce369e28d0138b292fe8db8a3d102b73fda231a716dd35",
-                "sha256:9d9f16e2c199cab91f48ead585d3f5ec7e8e4be428a25ddfed22abf786fa9b3a",
-                "sha256:bc7874302565721f443a27d8182fcc7152e5b560523f12f1377b130f473e4a0c"
-            ],
-            "version": "==3.1.0"
         },
         "markupsafe": {
             "hashes": [
@@ -140,22 +131,6 @@
             "markers": "python_version >= '3.7'",
             "version": "==2.1.5"
         },
-        "ndeflib": {
-            "hashes": [
-                "sha256:1d56828558b9b16f2822a4051824346347b66adf5320ea86070748b6f2454a88",
-                "sha256:c634b1af2ab454754f0fdbe1debd38247ed7bdaf94587359b857726f3ee7decb"
-            ],
-            "version": "==0.3.3"
-        },
-        "nfcpy": {
-            "hashes": [
-                "sha256:c1f3ecdd9755f9af46e89a945ed490354d089d5b19422e307159e256ff8c1b3d",
-                "sha256:e5bd08d0119e1d9e95d05215f838b07b44d03b651adddc523cc1a38892b8af6b"
-            ],
-            "index": "pypi",
-            "markers": "python_version >= '2.6'",
-            "version": "==1.0.4"
-        },
         "openpyxl": {
             "hashes": [
                 "sha256:5282c12b107bffeef825f4617dc029afaf41d0ea60823bbb665ef3079dc79de2",
@@ -164,19 +139,6 @@
             "index": "pypi",
             "markers": "python_version >= '3.8'",
             "version": "==3.1.5"
-        },
-        "pydes": {
-            "hashes": [
-                "sha256:e2ab8e21d2b83e90d90dbfdcb6fb8ac0000b813238b7ecaede04f8435c389012"
-            ],
-            "version": "==2.0.1"
-        },
-        "pyserial": {
-            "hashes": [
-                "sha256:3c77e014170dfffbd816e6ffc205e9842efb10be9f58ec16d3e8675b4925cddb",
-                "sha256:c4451db6ba391ca6ca299fb3ec7bae67a5c55dde170964c7a14ceefec02f2cf0"
-            ],
-            "version": "==3.5"
         },
         "werkzeug": {
             "hashes": [

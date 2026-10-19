@@ -33,7 +33,7 @@ docs/              設計ドキュメント
 
 ## 開発環境とコマンド
 
-- Python: `Pipfile` は `python_version = "3.11"`。依存は `flask`, `openpyxl`（`nfcpy` も記載されているがコードからは未使用）。
+- Python: `Pipfile` は `python_version = "3.11"`。依存は `flask`, `openpyxl` のみ。
 - ブラウザ: WebUSB 対応の Google Chrome（Chromium 系）が必須。
 
 ```sh
